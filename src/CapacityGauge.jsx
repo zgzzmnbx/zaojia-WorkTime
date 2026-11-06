@@ -26,7 +26,7 @@ export default function CapacityGauge({window,rules,label='整段累计',hideCap
   const description=`${window.start}至${window.end}，模拟工日参考：${scale.markers.map(m=>m.names.join('、')+format(m.value)).join('，')}；${unknown?'本段工时待补，超出量待核':label+format(scale.demand)+'工日'}${scale.tolerance?`，参考值均含${format(scale.tolerance)}工日容差`:''}${window.missing_calendar?.length?'；日历未维护，参考值为估算':''}`;
   const stops=[0,...scale.values,scale.max];
   if(vertical){
-    const axis=68,top=22,bottom=compact?184:260,y=value=>bottom-value/scale.max*(bottom-top);
+    const axis=68,top=compact?12:22,bottom=compact?174:260,y=value=>bottom-value/scale.max*(bottom-top);
     const refs=[...scale.markers].reverse().map(m=>({...m,y:y(m.value)}));
     refs.forEach((m,i)=>m.labelY=Math.max(top+6,m.y,i?refs[i-1].labelY+38:top+6));
     for(let i=refs.length-1;i>=0;i--)refs[i].labelY=Math.min(refs[i].labelY,i<refs.length-1?refs[i+1].labelY-38:bottom-12);

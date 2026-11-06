@@ -87,12 +87,12 @@
 .flow-conversion b{color:var(--ink)}
 .flow-conversion-basis{display:flex;flex-wrap:wrap;gap:3px 8px;margin:7px 0 0;color:var(--muted);font-size:10px}
 .flow-term.linked,.flow-term:hover{background:var(--tint);border-color:var(--accent)}
-.flow-total{display:flex;align-items:baseline;justify-content:space-between;width:100%;border:0;border-top:1px solid var(--line);border-radius:0;background:none;margin-top:12px;padding-top:12px;color:var(--muted);font-size:12px}
+.flow-total{display:flex;align-items:baseline;justify-content:space-between;width:100%;border:0;border-top:1px solid var(--line);border-radius:0;background:none;margin-top:8px;padding-top:6px;color:var(--muted);font-size:12px}
 .flow-total strong{font-size:30px;line-height:1.25;font-weight:650;letter-spacing:-1px;color:var(--accent)}
 .flow-total strong small{font-size:11px;font-weight:400;letter-spacing:0;margin-left:5px;color:var(--muted)}
-.flow-comparison{margin-top:10px;display:flex;align-items:center;gap:8px;font-size:11px}
-.flow-reference-copy{font-size:10px;color:var(--muted);margin-top:5px}
-.flow-result .capacity-gauge{margin:5px 0 0;width:100%;max-width:none;padding:0}
+.flow-comparison{margin-top:4px;display:flex;align-items:center;gap:8px;font-size:11px}
+.flow-reference-copy{font-size:10px;color:var(--muted);margin:2px 0 0}
+.flow-result .capacity-gauge{margin:0;width:100%;max-width:none;padding:0}
 .flow-result .capacity-gauge svg{font-size:10px}
 .flow-result .capacity-reference-value{font-size:11px}
 .capacity-vertical .capacity-zone{fill:color-mix(in srgb,var(--risk-ink) 16%,var(--paper))}
