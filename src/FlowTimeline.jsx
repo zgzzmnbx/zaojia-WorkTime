@@ -89,13 +89,13 @@ export default function FlowTimeline(props){
   const shown=walking?(scope?[scope]:[]):sorted.filter(w=>showAll||w.rank>0||isCurrent(w));
   const start=complete.length?Math.min(...complete.map(e=>day(e.start)))-3:0,end=complete.length?Math.max(...complete.map(e=>day(e.end)))+4:28,span=Math.max(28,end-start+1);
   const x=n=>left+(n-start)/span*timeWidth;
-  const top=64,rowHeight=70,rangeRowHeight=56;
-  const projectBottom=top+complete.length*rowHeight-8,reviewTop=projectBottom+20,rangeTop=reviewTop+42;
+  const top=64,rowHeight=70,rangeRowHeight=48;
+  const projectBottom=top+complete.length*rowHeight-8,reviewTop=projectBottom+20,rangeTop=reviewTop+30;
   const rangesEnd=rangeTop+shown.length*rangeRowHeight;
   const auxiliaryY=rangesEnd+(hidden.length&&!walking?34:10);
   const range=scope;
   const selectedRangeIndex=shown.findIndex(isCurrent);
-  const guideBottom=rangeTop+Math.max(0,selectedRangeIndex)*rangeRowHeight+48;
+  const guideBottom=rangeTop+Math.max(0,selectedRangeIndex)*rangeRowHeight+40;
   const height=Math.max(460,auxiliaryY+48,24+resultHeight+18);
   const highlightTotal=()=>{setHighlightedId(null);if(scope&&!walking)selectScope(scope);};
   const nodes=[];
