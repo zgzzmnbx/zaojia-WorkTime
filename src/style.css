@@ -38,15 +38,15 @@
 @media(max-width:1250px){.app-header{gap:6px}.app-header .search{width:180px}.people-panel{width:210px}.evidence{width:280px}.hours-timeline{margin:0 16px 12px}}
 
 /* Semantic accents stay quiet; the application theme and actions remain Astra blue. */
-.rank-0{--risk-ink:#286345;--risk-bg:#edf5ef;--risk-line:#a6c7b1}
-.rank-1{--risk-ink:#795b19;--risk-bg:#faf5e8;--risk-line:#d4bd82}
-.rank-2{--risk-ink:#92502d;--risk-bg:#faf0e9;--risk-line:#d4ab8f}
-.rank-3{--risk-ink:#98474b;--risk-bg:#f8eded;--risk-line:#d3a1a4}
+.rank-0{--risk-ink:#4d7567;--risk-bg:#eef5f1;--risk-line:#b8ccc2}
+.rank-1{--risk-ink:#756b52;--risk-bg:#f6f4ed;--risk-line:#d6ceb8}
+.rank-2{--risk-ink:#8a6a24;--risk-bg:#faf2de;--risk-line:#dcc795}
+.rank-3{--risk-ink:#9a5b13;--risk-bg:#fff4de;--risk-line:#e4c489}
 .rank-pending,.rank-none,.rank-review{--risk-ink:var(--muted);--risk-bg:var(--soft);--risk-line:var(--line)}
-[data-theme=dark] .rank-0{--risk-ink:#a2cbb1;--risk-bg:#24332c;--risk-line:#577b66}
-[data-theme=dark] .rank-1{--risk-ink:#d7c18c;--risk-bg:#342f23;--risk-line:#86754b}
-[data-theme=dark] .rank-2{--risk-ink:#d8b399;--risk-bg:#372c25;--risk-line:#89694f}
-[data-theme=dark] .rank-3{--risk-ink:#d9a9ad;--risk-bg:#37292d;--risk-line:#8b6269}
+[data-theme=dark] .rank-0{--risk-ink:#a3c5b7;--risk-bg:#25352f;--risk-line:#607e70}
+[data-theme=dark] .rank-1{--risk-ink:#cbc4ae;--risk-bg:#32322c;--risk-line:#77745e}
+[data-theme=dark] .rank-2{--risk-ink:#d8be7a;--risk-bg:#383226;--risk-line:#8c7747}
+[data-theme=dark] .rank-3{--risk-ink:#f0c078;--risk-bg:#3c3020;--risk-line:#a07a42}
 .gantt-bar.risk-bar{background:var(--risk-bg);color:var(--risk-ink);border-color:var(--risk-line);border-left:3px solid var(--risk-ink);box-shadow:none}
 .gantt-bar.risk-bar:hover{filter:none;box-shadow:0 2px 8px #182b4910}
 .gantt-bar.risk-bar b{display:flex;gap:10px;align-items:center}

@@ -4,7 +4,7 @@
 
 **按人员查看跨项目投入，让每一项累计都有来源。**
 
-![Version](https://img.shields.io/badge/version-0.4.15-228be6)
+![Version](https://img.shields.io/badge/version-0.4.16-228be6)
 ![Rules](https://img.shields.io/badge/rules-0.1.0%20%7C%20simulation-d97706)
 ![React](https://img.shields.io/badge/React-19-149eca?logo=react&logoColor=white)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-3776ab?logo=python&logoColor=white)
