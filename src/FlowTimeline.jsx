@@ -45,20 +45,24 @@ function ResultNode({id,data:d}){
   const updateNodeInternals=useUpdateNodeInternals();
   const known=d.scope;
   const rows=windowContributions(known,d.entries,d.rules);
+  const converted=rows.some(e=>e.unit!=='工日');
+  const rowUnits=rows.map(e=>`${e.id}:${e.unit}`).join('|');
   const comparison=capacityComparison(known,d.rules);
   const range=d.scope;
   useEffect(()=>{const observer=new ResizeObserver(([e])=>d.onHeight(e.borderBoxSize?.[0]?.blockSize||e.contentRect.height));observer.observe(ref.current);return()=>observer.disconnect();},[d.onHeight]);
-  useEffect(()=>{updateNodeInternals(id);},[id,updateNodeInternals,range?.start,range?.end,rows.length]);
+  useEffect(()=>{updateNodeInternals(id);},[id,updateNodeInternals,range?.start,range?.end,rowUnits]);
   return <aside ref={ref} className="card bg-base-100 flow-result nodrag nopan" aria-label="相连申报的累计计算">
     <div className="flow-result-caption"><span>本次累计</span><span className="badge badge-sm badge-ghost">模拟</span><button className="btn btn-ghost btn-xs btn-square" aria-label="查看本次计算依据" title={riskExplanation(known,d.rules)||capacityExplanation(known,d.rules)} onClick={()=>d.onRisk(known)}><Info size={16}/></button></div>
     <div className="flow-result-date">{date(range?.start)} — {date(range?.end)}</div>
     <div className="flow-terms">{rows.map(e=><div className="flow-term-wrap" key={e.id}>
       <Handle type="target" id={e.id} position={Position.Left} isConnectable={false} style={{top:'50%',left:-13}}/>
-      <button className={`flow-term ${d.highlightedId===e.id?'linked':''}`} data-entry-id={e.id} onClick={()=>d.onSelect(e.id)} onMouseEnter={()=>d.onHighlight(e.id)} onMouseLeave={()=>d.onHighlight(null)} onFocus={()=>d.onHighlight(e.id)} onBlur={()=>d.onHighlight(null)} title={`${d.projects.find(p=>p.id===e.project_id)?.name} · ${e.start}—${e.end}`}>
-        <span className="claim-number">{d.numbers.get(e.id)}</span><span className="flow-term-name">{d.projects.find(p=>p.id===e.project_id)?.name}</span><b>{num(e.days)}<small> 工日</small></b>
+      <button className={`flow-term ${e.unit!=='工日'?'converted':''} ${d.highlightedId===e.id?'linked':''}`} data-entry-id={e.id} onClick={()=>d.onSelect(e.id)} onMouseEnter={()=>d.onHighlight(e.id)} onMouseLeave={()=>d.onHighlight(null)} onFocus={()=>d.onHighlight(e.id)} onBlur={()=>d.onHighlight(null)} title={`${d.projects.find(p=>p.id===e.project_id)?.name} · ${e.start}—${e.end}`}>
+        <span className="claim-number">{d.numbers.get(e.id)}</span><span className="flow-term-name">{d.projects.find(p=>p.id===e.project_id)?.name}</span>
+        {e.unit==='工日'?<b>{num(e.days)}<small> 工日</small></b>:<span className="flow-conversion"><span>{num(e.amount)} {e.unit}{e.days!=null?` ${e.unit==='工时'?'÷':'×'} ${num(e.unit==='工时'?d.rules.hours_per_day:d.rules.days_per_month)} = `:' · '}</span><b>{e.days!=null?<>{num(e.days)}<small> 工日</small></>:'换算待补'}</b></span>}
       </button>
     </div>)}</div>
-      <button className="flow-total" onClick={d.onTotal} aria-label={`高亮整段累计${num(known.demand)}工日的全部来源`}><span>合计</span><strong>{num(known.demand)}<small>工日</small></strong></button>
+      {converted&&<div className="flow-conversion-basis">{rows.some(e=>e.unit==='工时')&&<span>1 工日 = {num(d.rules.hours_per_day)} 工时</span>}{rows.some(e=>e.unit==='人月')&&<span>1 人月 = {num(d.rules.days_per_month)} 工日</span>}</div>}
+      <button className="flow-total" onClick={d.onTotal} aria-label={`高亮整段累计${num(known.demand)}工日的全部来源`}><span>{converted?'折合合计':'合计'}</span><strong>{num(known.demand)}<small>工日</small></strong></button>
       <div className="flow-comparison" role="status"><span className={`badge badge-sm flow-risk rank-${known.rank}`}>{riskLabels[known.rank]}</span><span>{comparison?.exceeded?`超出 ${comparison.excess>0&&comparison.excess<.01?comparison.excess.toPrecision(2):num(comparison.excess)} 工日`:'未超出参考线'}</span></div>
       {comparison&&<p className="flow-reference-copy">{comparison.boundary} {num(comparison.threshold)} 工日{d.rules.tolerance>0?'（含容差）':''}</p>}
     <CapacityGauge window={known} rules={d.rules} hideCaption vertical compact/>

@@ -28,7 +28,7 @@
 .claim-button>.claim-number{background:var(--paper);font-size:10px;min-width:19px;height:20px;border-radius:4px;flex-shrink:0;color:var(--accent)}
 .flow-claim-dates{min-width:0;overflow:hidden;text-overflow:ellipsis;font-size:11px;color:color-mix(in srgb,var(--ink) 85%,var(--accent))}
 .claim-button strong{margin-left:auto;font-weight:650;font-size:14px;display:flex;gap:3px;align-items:baseline;flex-shrink:0}
-.claim-button strong small{font-weight:400;font-size:10px;color:var(--muted)}
+.claim-button strong small{font-weight:400;font-size:11px;color:var(--ink)}
 .flow-claim.excluded .claim-button{background:var(--soft);border-color:var(--line);color:var(--muted);box-shadow:none}
 .flow-claim.excluded .claim-button::before{background:var(--muted);opacity:.28}
 .flow-claim.excluded .flow-claim-dates{color:var(--muted)}
@@ -78,6 +78,10 @@
 .flow-term-name{min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .flow-term .claim-number{min-width:17px;height:18px;font-size:10px;border-radius:4px}
 .flow-term b{font-size:12px;white-space:nowrap;font-weight:600}.flow-term b small{font-weight:400;font-size:10px}
+.flow-term.converted{display:grid;grid-template-columns:17px minmax(0,1fr);height:auto;min-height:53px;gap:3px 5px;padding:6px}
+.flow-conversion{grid-column:2;display:flex;align-items:baseline;gap:3px;flex-wrap:wrap;font-size:11px;color:var(--muted)}
+.flow-conversion b{color:var(--ink)}
+.flow-conversion-basis{display:flex;flex-wrap:wrap;gap:3px 8px;margin:7px 0 0;color:var(--muted);font-size:10px}
 .flow-term.linked,.flow-term:hover{background:var(--tint);border-color:var(--accent)}
 .flow-total{display:flex;align-items:baseline;justify-content:space-between;width:100%;border:0;border-top:1px solid var(--line);border-radius:0;background:none;margin-top:12px;padding-top:12px;color:var(--muted);font-size:12px}
 .flow-total strong{font-size:30px;line-height:1.25;font-weight:650;letter-spacing:-1px;color:var(--accent)}

@@ -4,7 +4,7 @@
 
 **按人员查看跨项目投入，让每一项累计都有来源。**
 
-![Version](https://img.shields.io/badge/version-0.4.2-2563eb)
+![Version](https://img.shields.io/badge/version-0.4.3-2563eb)
 ![Rules](https://img.shields.io/badge/rules-0.1.0%20%7C%20simulation-d97706)
 ![React](https://img.shields.io/badge/React-19-149eca?logo=react&logoColor=white)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-3776ab?logo=python&logoColor=white)
@@ -35,7 +35,7 @@
 
 | 能力 | 使用方式 |
 | --- | --- |
-| 跨项目累计 | 按人员汇总完整核查窗口内的有效申报，对照常规、加班后及高负荷参考量 |
+| 跨项目累计 | 按人员汇总完整核查窗口内的有效申报，对照常规、加班后及高负荷参考量；工时、人月逐项显示换算为工日的算式 |
 | 实施期检查 | 核对人员投入起止日期、项目实施期及来源，提示期外投入和缺失依据 |
 | 职称与计费检查 | 核对职称证明、有效期、计费等级、单价、单位及合同依据 |
 | 平均投入密度 | 整条蓝色越深，整段平均投入越高；显示申报工日 ÷ 日历天数，不代表实际逐日投入 |
