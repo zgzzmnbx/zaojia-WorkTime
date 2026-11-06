@@ -44,7 +44,8 @@ body{font-family:'Microsoft YaHei UI','PingFang SC',system-ui,sans-serif;font-si
 .person-name .avatar-letter{height:29px;width:29px;border-radius:7px;font-size:10px;background:var(--soft);color:var(--muted)}
 .person-card.active .avatar-letter{background:var(--paper);color:var(--accent)}
 .person-company{font-size:11px;margin-top:8px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.person-bottom{font-size:11px;margin-top:7px}
+.person-bottom{font-size:11px;margin-top:7px;align-items:center;gap:5px;flex-wrap:wrap}
+.person-risk-text.badge{height:auto;min-height:20px;padding:2px 6px;border:0;border-radius:4px;background:var(--risk-bg);color:var(--risk-ink);font-size:10px;font-weight:500;line-height:16px;white-space:nowrap}
 .risk-dot{width:6px;height:6px}
 .person-card .pending-label{font-size:10px;margin-top:4px}
 .shell-body main{background:var(--canvas)}
