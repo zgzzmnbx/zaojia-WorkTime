@@ -34,6 +34,8 @@
 .flow-claim.excluded .flow-claim-dates{color:var(--muted)}
 .flow-claim.excluded .claim-number{color:var(--muted)}
 .flow-claim .claim-button.has-density{background:color-mix(in srgb,var(--accent) var(--density-tint),var(--paper));color:var(--ink)}
+.claim-density-grid{position:absolute;inset:0;background-image:linear-gradient(to right,color-mix(in srgb,var(--accent) 14%,transparent) 1px,transparent 1px),linear-gradient(to bottom,color-mix(in srgb,var(--accent) 9%,transparent) 1px,transparent 1px);background-size:var(--density-grid-step) 14px;pointer-events:none;z-index:0}
+.claim-button>.claim-number,.claim-button>.flow-claim-dates,.claim-button>strong{position:relative;z-index:1}
 .flow-claim.linked .claim-button,.claim-button:hover,.claim-button:focus-visible{outline:2px solid color-mix(in srgb,var(--accent) 65%,transparent);outline-offset:2px}
 .flow-overlap-slice{position:absolute;top:0;bottom:0;background:repeating-linear-gradient(135deg,var(--hatch),var(--hatch) 2px,transparent 2px,transparent 6px);border-inline:1px dashed var(--muted)}
 @container flow-claim (max-width:190px){.flow-claim-dates{display:none}.claim-button{padding-inline:7px;gap:4px}}

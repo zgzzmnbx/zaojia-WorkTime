@@ -68,8 +68,26 @@ body{font-family:'Microsoft YaHei UI','PingFang SC',system-ui,sans-serif;font-si
 .timeline-entries .table .btn-sm{height:28px;min-height:28px;padding-inline:6px;font-size:11px}
 .page-scroll{padding:20px}.page-scroll>.table,.page-scroll>.table-scroll{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--paper)}
 .evidence{width:285px;border-left:1px solid var(--line);background:var(--paper);box-shadow:-8px 0 24px #1d335706}
-.evidence-title{min-height:60px;padding:12px 16px}
-.evidence-title h3{font-size:14px}.evidence-body{padding:18px 16px}.detail-project{font-size:17px;font-weight:600}.detail-amount{font-size:30px;letter-spacing:-.5px}.detail-section{padding-top:16px;margin-top:18px}
+.evidence-title{min-height:44px;padding:6px 14px;gap:5px}
+.evidence-title h3{font-size:13px;flex:1}
+.evidence-title .btn.icon{height:28px;min-height:28px;width:28px}
+.evidence-body{padding:12px 14px;font-size:12px}
+.evidence-body p{font-size:12px;line-height:1.6}
+.evidence-body .detail-project{font-size:13px;font-weight:600}
+.detail-overview{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:5px 0}
+.evidence-body .detail-amount{font-size:20px;letter-spacing:-.3px;margin:0}
+.evidence-body .detail-amount small{font-size:11px;margin-left:5px}
+.evidence-body .detail-status{margin:0;gap:5px}
+.evidence-body .detail-status .btn{min-height:26px;height:26px;padding-inline:6px}
+.evidence-body .detail-meta{font-size:11px!important;margin-bottom:6px}
+.evidence-body .detail-section{padding-top:10px;margin-top:10px}
+.evidence-body .detail-section.first{margin:0;padding:0;border:0}
+.evidence-body .detail-section h4{font-size:12px;margin-bottom:6px}
+.evidence-body .detail-section summary{font-size:12px;color:var(--muted);line-height:24px}
+.evidence-body details[open]>summary{margin-bottom:6px;color:var(--ink)}
+.evidence-body .check-row{padding:4px 0;font-size:12px}
+.evidence-body .detail-section dl{gap:6px 8px;font-size:12px;margin:8px 0}
+.evidence-body p.finding{font-size:12px;gap:6px;margin-bottom:7px}
 .app-modal .modal-box{width:min(640px,calc(100vw - 48px));max-width:none;max-height:calc(100dvh - 48px);padding:0;display:flex;flex-direction:column;overflow:hidden;border-radius:14px;box-shadow:0 18px 70px #152a4933}
 .app-modal.wide .modal-box{width:min(760px,calc(100vw - 48px))}
 .app-modal::backdrop{background:#15243b55;backdrop-filter:blur(3px)}
