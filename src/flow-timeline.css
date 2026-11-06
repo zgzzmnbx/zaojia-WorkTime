@@ -46,10 +46,10 @@
 .flow-range-label small{font-size:10px}
 .flow-range-row.current .flow-range-label{color:var(--accent)}
 .flow-range{--range-stroke:color-mix(in srgb,var(--muted) 65%,var(--line));container:flow-range / inline-size;position:absolute;top:4px;height:46px;border:0;background:none;display:flex;justify-content:center;align-items:flex-end;color:var(--ink)}
-.flow-range::before,.flow-range::after{content:'';position:absolute;top:18px;bottom:0;width:8px;border-block:2px solid var(--range-stroke);pointer-events:none}
-.flow-range::before{left:0;border-left:2px solid var(--range-stroke);border-radius:2px 0 0 2px}
-.flow-range::after{right:0;border-right:2px solid var(--range-stroke);border-radius:0 2px 2px 0}
-.flow-range-line{position:absolute;left:1px;right:1px;top:32px;border-top:1.5px solid var(--range-stroke);pointer-events:none}
+.flow-range::before,.flow-range::after{content:'';position:absolute;top:26px;height:12px;width:1.5px;background:var(--range-stroke);border-radius:1px;pointer-events:none}
+.flow-range::before{left:0}
+.flow-range::after{right:0}
+.flow-range-line{position:absolute;left:1px;right:1px;top:32px;border-top:1px solid var(--range-stroke);pointer-events:none}
 .flow-range-endpoints{position:absolute;inset:0 0 auto;display:flex;justify-content:space-between;color:var(--accent);font-size:11px;font-weight:550;line-height:15px;white-space:nowrap}
 .endpoint-separator{display:none}
 .flow-range-summary{position:relative;z-index:1;display:flex;align-items:center;gap:6px;padding:3px 8px;background:var(--paper);border:1px solid var(--line);border-radius:6px;white-space:nowrap;max-width:100%;box-shadow:0 2px 4px #20365a04;line-height:20px}
@@ -58,7 +58,7 @@
 .flow-sigma{color:var(--muted);font-size:12px}
 .flow-risk{background:var(--risk-bg);color:var(--risk-ink);border:0;border-radius:4px;min-height:18px;height:auto;padding:1px 5px;font-size:10px;line-height:16px;font-weight:500;white-space:nowrap}
 .flow-range-row.current .flow-range{--range-stroke:var(--accent)}
-.flow-range-row.current .flow-range-line{border-top-width:2px}
+.flow-range-row.current .flow-range-line{border-top-width:1.5px}
 .flow-range-row.current .flow-range-summary{border-color:var(--accent);color:var(--accent);background:var(--tint);box-shadow:0 0 0 2px var(--paper)}
 .flow-range:hover .flow-range-summary,.flow-range:focus-visible .flow-range-summary{outline:2px solid var(--accent);outline-offset:2px}
 @container flow-range (max-width:120px){.flow-range-summary{gap:4px;padding:2px 5px}.flow-sigma{display:none}}
