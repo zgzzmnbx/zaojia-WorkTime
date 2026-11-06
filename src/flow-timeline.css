@@ -23,14 +23,13 @@
 .flow-project-label.included small{color:var(--accent)}
 .flow-claim{width:100%;height:42px;position:relative;container:flow-claim / inline-size}
 .claim-button{height:100%;width:100%;display:flex;align-items:center;gap:7px;position:relative;overflow:hidden;white-space:nowrap;padding:0 10px;border:1px solid color-mix(in srgb,var(--accent) 27%,var(--line));border-radius:7px;background:color-mix(in srgb,var(--tint) 80%,var(--paper));color:var(--ink);box-shadow:0 2px 3px #21356605}
-.claim-button::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent);opacity:.85}
+.flow-claim.included .claim-button{border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
 .flow-project-label>.claim-density-label{font-size:10px;color:var(--muted);background:var(--soft);border-radius:3px;padding:0 4px;line-height:15px;white-space:nowrap}
 .claim-button>.claim-number{background:var(--paper);font-size:10px;min-width:19px;height:20px;border-radius:4px;flex-shrink:0;color:var(--accent)}
 .flow-claim-dates{min-width:0;overflow:hidden;text-overflow:ellipsis;font-size:11px;color:color-mix(in srgb,var(--ink) 85%,var(--accent))}
 .claim-button strong{margin-left:auto;font-weight:650;font-size:14px;display:flex;gap:3px;align-items:baseline;flex-shrink:0}
 .claim-button strong small{font-weight:400;font-size:11px;color:var(--ink)}
 .flow-claim.excluded .claim-button{background:var(--soft);border-color:var(--line);color:var(--muted);box-shadow:none}
-.flow-claim.excluded .claim-button::before{background:var(--muted);opacity:.28}
 .flow-claim.excluded .flow-claim-dates{color:var(--muted)}
 .flow-claim.excluded .claim-number{color:var(--muted)}
 .flow-claim .claim-button.has-density{background:color-mix(in srgb,var(--accent) var(--density-tint),var(--paper));color:var(--ink)}

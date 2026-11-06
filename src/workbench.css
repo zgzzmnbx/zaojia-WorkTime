@@ -28,8 +28,8 @@ body{font-family:'Microsoft YaHei UI','PingFang SC',system-ui,sans-serif;font-si
 .people-filter select{font-size:12px;color:var(--ink)}
 .people-list{padding:2px 8px 12px}
 .person-card.card{display:block;text-align:left;width:100%;padding:12px 10px 12px 12px;border:1px solid transparent;border-radius:8px;margin-bottom:4px;background:transparent;box-shadow:none;position:relative}
-.person-card.card.active{background:var(--tint);border-color:color-mix(in srgb,var(--accent) 15%,var(--line))}
-.person-card.card.active::before{content:'';position:absolute;left:-1px;top:17px;bottom:17px;width:3px;border-radius:0 3px 3px 0;background:var(--accent)}
+.person-card.card.active{background:var(--tint);border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+.person-card.active .person-name strong{color:var(--accent);font-weight:650}
 .person-card.card:hover:not(.active){background:var(--soft)}
 .person-name{gap:8px}.person-name strong{font-size:13px;font-weight:600}
 .person-name .avatar-letter{height:29px;width:29px;border-radius:7px;font-size:10px;background:var(--soft);color:var(--muted)}
