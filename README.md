@@ -4,7 +4,7 @@
 
 **按人员查看跨项目投入，让每一项累计都有来源。**
 
-![Version](https://img.shields.io/badge/version-0.3.2-2563eb)
+![Version](https://img.shields.io/badge/version-0.3.3-2563eb)
 ![Rules](https://img.shields.io/badge/rules-0.1.0%20%7C%20simulation-d97706)
 ![React](https://img.shields.io/badge/React-19-149eca?logo=react&logoColor=white)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-3776ab?logo=python&logoColor=white)
@@ -67,6 +67,8 @@ python server.py
 | --- | --- | --- |
 | 业务台账 | [http://127.0.0.1:8791/](http://127.0.0.1:8791/) | 空台账，用于自行录入 |
 | 模拟案例 | [http://127.0.0.1:8791/?demo=1](http://127.0.0.1:8791/?demo=1) | 12 人、6 个项目、34 条申报 |
+
+顶部“实际 / 模拟”可直接切换两套台账，当前选项以蓝色高亮；旁边的 info 入口可查看数据与规则说明。
 
 首次启动会自动创建两个独立数据库。业务台账也使用模拟规则，和“模拟案例”的区别是数据来源。
 
@@ -187,4 +189,4 @@ zaojia-WorkTime/
 - [首版验收记录（历史）](00-docs/验收记录-v0.1.0-【codex】.md)
 - [版本记录](CHANGELOG.md) · [历史归档](CHANGELOG-历史归档.md)
 
-界面与项目版本为 **v0.3.2**，规则与服务版本为 **v0.1.0**。真实项目对照、正式合同规则、内网多机部署、Excel/WPS 打开 CSV 及签字验收仍待验证。
+界面与项目版本为 **v0.3.3**，规则与服务版本为 **v0.1.0**。真实项目对照、正式合同规则、内网多机部署、Excel/WPS 打开 CSV 及签字验收仍待验证。
