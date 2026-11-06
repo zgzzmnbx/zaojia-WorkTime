@@ -11,11 +11,13 @@
 .flow-host .react-flow__handle{width:6px;height:6px;min-width:6px;min-height:6px;background:var(--accent);border:1px solid var(--paper)}
 .flow-host .react-flow__handle.unused-handle{visibility:hidden}
 .flow-sheet,.flow-review-ground{position:absolute;left:0;pointer-events:none;z-index:-2}
-.flow-sheet{top:0;background:var(--paper)}
-.flow-sheet-label{position:absolute;left:16px;top:18px;font-size:11px;color:var(--muted);letter-spacing:.4px}
+.flow-sheet{top:0;background:var(--paper);border-bottom:1px solid var(--line)}
+.flow-section-title{margin:0;color:var(--ink);font-size:13px;font-weight:650;line-height:20px;letter-spacing:.2px}
+.flow-sheet-label{position:absolute;left:16px;top:15px}
 .flow-date-tick{position:absolute;top:17px;font-size:11px;color:var(--muted);white-space:nowrap}
 .flow-grid-line{position:absolute;border-left:1px dashed var(--line);opacity:.7}
 .flow-lane-ground{position:absolute;left:12px;right:8px;border-bottom:1px solid color-mix(in srgb,var(--line) 55%,transparent)}
+.flow-lane-ground:last-child{border-bottom:0}
 .flow-project-label{width:100%;height:58px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:3px;border:0;background:none;text-align:left;padding:0 6px 0 0}
 .flow-project-label strong{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink);font-size:13px;font-weight:550}
 .flow-project-label>span{display:flex;gap:9px;align-items:center;color:var(--muted);font-size:11px}
@@ -40,8 +42,8 @@
 .flow-overlap-slice{position:absolute;top:0;bottom:0;background:repeating-linear-gradient(135deg,var(--hatch),var(--hatch) 2px,transparent 2px,transparent 6px);border-inline:1px dashed var(--muted)}
 @container flow-claim (max-width:190px){.flow-claim-dates{display:none}.claim-button{padding-inline:7px;gap:4px}}
 @container flow-claim (max-width:65px){.claim-button .claim-number{display:none}.claim-button strong{font-size:11px}}
-.flow-review-ground{left:12px;background:var(--canvas);border:1px solid var(--line);border-radius:9px}
-.flow-review-ground>span{position:absolute;top:-22px;left:3px;color:var(--muted);font-size:11px}
+.flow-review-ground{left:12px;background:color-mix(in srgb,var(--accent) 4%,var(--soft));border:1px solid var(--line);border-radius:9px}
+.flow-review-ground>.flow-section-title{position:absolute;top:12px;left:12px}
 .flow-range-row{height:56px;position:relative}
 .flow-range-label{position:absolute;left:24px;top:15px;width:128px;display:flex;flex-direction:column;gap:2px;background:none;border:0;text-align:left;font-size:11px;color:var(--muted)}
 .flow-range-label small{font-size:10px}

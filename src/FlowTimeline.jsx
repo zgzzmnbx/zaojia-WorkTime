@@ -89,7 +89,8 @@ export default function FlowTimeline(props){
   const shown=walking?(scope?[scope]:[]):sorted.filter(w=>showAll||w.rank>0||isCurrent(w));
   const start=complete.length?Math.min(...complete.map(e=>day(e.start)))-3:0,end=complete.length?Math.max(...complete.map(e=>day(e.end)))+4:28,span=Math.max(28,end-start+1);
   const x=n=>left+(n-start)/span*timeWidth;
-  const top=64,rowHeight=70,rangeRowHeight=56,rangeTop=top+complete.length*rowHeight+30;
+  const top=64,rowHeight=70,rangeRowHeight=56;
+  const projectBottom=top+complete.length*rowHeight-8,reviewTop=projectBottom+20,rangeTop=reviewTop+42;
   const rangesEnd=rangeTop+shown.length*rangeRowHeight;
   const auxiliaryY=rangesEnd+(hidden.length&&!walking?34:10);
   const range=scope;
@@ -120,12 +121,12 @@ export default function FlowTimeline(props){
     {!complete.length?<div className="empty"><h3>补充投入日期后显示轨迹</h3><p>缺少日期的申报仍保留在下方记录中。</p></div>:<ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} nodesDraggable={false} nodesConnectable={false} elementsSelectable={false} deleteKeyCode={null} panOnDrag={zoom>baseZoom+.001} panActivationKeyCode={null} panOnScroll={false} translateExtent={[[0,0],[totalWidth,height]]} zoomOnScroll={false} zoomOnPinch zoomOnDoubleClick={false} minZoom={baseZoom} maxZoom={1.8} defaultViewport={{x:0,y:0,zoom:baseZoom}} onInit={i=>{instanceRef.current=i;i.setViewport({x:0,y:0,zoom:baseZoom});}} onMove={(_,v)=>setZoom(v.zoom)} onMoveEnd={(_,v)=>{if(v.zoom<=baseZoom+.001&&(Math.abs(v.x)>.01||Math.abs(v.y)>.01))instanceRef.current?.setViewport({x:0,y:0,zoom:baseZoom});}} preventScrolling={false} ariaLabelConfig={{'controls.zoomIn.ariaLabel':'放大画布','controls.zoomOut.ariaLabel':'缩小画布','controls.fitView.ariaLabel':'适应全部节点'}} aria-label="可缩放的工时核查画布">
       <Controls position="bottom-left" showInteractive={false} fitViewOptions={{padding:.04,maxZoom:baseZoom}} aria-label="画布缩放控制"/>
       <ViewportPortal>
-        <div className="flow-sheet" style={{width:resultX-20,height:rangeTop-10}} aria-hidden="true">
-          <div className="flow-sheet-label">项目投入</div>{ticks.map((t,i)=><React.Fragment key={t}><span className="flow-date-tick" style={{left:x(t),transform:i===0?'none':i===ticks.length-1?'translateX(-100%)':'translateX(-50%)'}}>{date(iso(t))}</span><i className="flow-grid-line" style={{left:x(t),top:45,height:rangeTop-56}}/></React.Fragment>)}
+        <div className="flow-sheet" style={{width:resultX-20,height:projectBottom}}>
+          <h3 className="flow-sheet-label flow-section-title">项目投入</h3>{ticks.map((t,i)=><React.Fragment key={t}><span className="flow-date-tick" style={{left:x(t),transform:i===0?'none':i===ticks.length-1?'translateX(-100%)':'translateX(-50%)'}}>{date(iso(t))}</span><i className="flow-grid-line" style={{left:x(t),top:45,height:projectBottom-45}} aria-hidden="true"/></React.Fragment>)}
           {complete.map((e,i)=><div className="flow-lane-ground" key={e.id} style={{top:top+i*rowHeight-8,height:rowHeight}}/>)}
         </div>
         {range&&<div className="flow-guide-area" data-start={range.start} data-end={range.end} style={{left:x(day(range.start)),top:43,width:(day(range.end)-day(range.start)+1)/span*timeWidth,height:guideBottom-43}} aria-hidden="true"/>}
-        {shown.length>0&&<div className="flow-review-ground" style={{top:rangeTop-18,width:resultX-32,height:rangesEnd-rangeTop+18+(hidden.length&&!walking?32:4)}} aria-hidden="true"><span>累计核查</span></div>}
+        {shown.length>0&&<div className="flow-review-ground" style={{top:reviewTop,width:resultX-32,height:rangesEnd-reviewTop+(hidden.length&&!walking?32:4)}}><h3 className="flow-section-title">累计核查</h3></div>}
         {hidden.length>0&&!walking&&<button className="flow-fold nodrag nopan" aria-expanded={showAll} style={{top:rangesEnd+2,left:24}} onClick={()=>setShowAll(v=>!v)}><CaretDown size={12} style={{transform:showAll?'rotate(180deg)':''}}/>{showAll?'收起常规时段':`其余 ${hidden.length} 个常规时段`}</button>}
       </ViewportPortal>
     </ReactFlow>}
