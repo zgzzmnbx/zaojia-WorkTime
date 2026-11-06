@@ -57,6 +57,16 @@ export function capacityExplanation(window, rules = {}) {
 }
 const day = value => Date.parse(`${value}T00:00:00Z`) / 86400000;
 
+// An interval average for visual comparison only; never allocate it to daily records.
+export function entryDensity(entry, rules = {}) {
+  const validDate=value=>typeof value==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(value)&&Number.isFinite(day(value))&&new Date(day(value)*86400000).toISOString().slice(0,10)===value;
+  if(!validDate(entry?.start)||!validDate(entry?.end)||entry.end<entry.start||!Number.isFinite(entry.amount)||entry.amount<0)return null;
+  const days=windowContributions({entry_ids:[entry.id]},[entry],rules)[0]?.days;
+  if(!Number.isFinite(days)||days<0)return null;
+  const calendarDays=day(entry.end)-day(entry.start)+1;
+  return {days,calendarDays,perDay:days/calendarDays};
+}
+
 // Reference-only view of an overlap; follows engine.Capacity without allocating claims.
 export function overlapCapacity(overlap, rules, calendars = []) {
   if(!overlap||!Number.isInteger(overlap.start)||!Number.isInteger(overlap.end)||overlap.end<overlap.start)return null;

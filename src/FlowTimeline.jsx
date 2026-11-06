@@ -3,27 +3,30 @@ import {ReactFlow,Handle,Position,Controls,ViewportPortal,useUpdateNodeInternals
 import {Info,Play,ArrowLeft,ArrowRight,CaretDown,ArrowsOutSimple} from '@phosphor-icons/react';
 import '@xyflow/react/dist/style.css';
 import CapacityGauge from './CapacityGauge.jsx';
-import {entryNumbers,windowContributions,riskLabels,orderedWindows,capacityComparison,riskExplanation,capacityExplanation} from './timelineRisk.js';
+import {entryNumbers,entryDensity,windowContributions,riskLabels,orderedWindows,capacityComparison,riskExplanation,capacityExplanation} from './timelineRisk.js';
 import './flow-timeline.css';
 
 const DAY=86400000,day=s=>Date.parse(s+'T00:00:00Z')/DAY;
 const iso=n=>new Date(n*DAY).toISOString().slice(0,10);
 const date=s=>s?.slice(5).replace('-','/')||'—';
 const num=v=>v==null?'—':Number(v).toLocaleString('zh-CN',{maximumFractionDigits:2});
+const densityNum=v=>v>0&&v<.01?v.toLocaleString('zh-CN',{maximumSignificantDigits:2}):num(v);
 const key=w=>`${w.start}/${w.end}`;
 
 function ClaimNode({data:d}){
   return <div className={`flow-claim ${d.included?'included':'excluded'} ${d.highlighted?'linked':''}`} data-entry-id={d.entry.id}>
-    <button className="claim-button nodrag" aria-label={`查看${d.name}申报轨迹`} title={`${d.name} · ${d.entry.start}—${d.entry.end} · ${num(d.entry.amount)}${d.entry.unit}`} onClick={()=>d.onSelect(d.entry.id)} onMouseEnter={()=>d.onHighlight(d.entry.id)} onMouseLeave={()=>d.onHighlight(null)} onFocus={()=>d.onHighlight(d.entry.id)} onBlur={()=>d.onHighlight(null)}>
+    <button className={`claim-button nodrag ${d.density?'has-density':''}`} aria-label={`查看${d.name}申报轨迹`} title={`${d.name} · ${d.entry.start}—${d.entry.end} · ${num(d.entry.amount)}${d.entry.unit}\n${d.densityText}`} onClick={()=>d.onSelect(d.entry.id)} onMouseEnter={()=>d.onHighlight(d.entry.id)} onMouseLeave={()=>d.onHighlight(null)} onFocus={()=>d.onHighlight(d.entry.id)} onBlur={()=>d.onHighlight(null)}>
       <span className="claim-number">{d.number}</span><span className="flow-claim-dates">{date(d.entry.start)} — {date(d.entry.end)}</span><strong>{num(d.entry.amount)}<small>{d.entry.unit}</small></strong>
+      {d.density&&<span className="claim-density-strip" data-density={d.density.perDay} aria-hidden="true" style={{'--density-spacing':`${Math.max(4,Math.min(48,12/d.density.perDay))}px`,opacity:d.density.perDay>0?1:0}}/>}
     </button>
     <Handle type="source" position={Position.Right} isConnectable={false} className={d.included?'':'unused-handle'}/>
   </div>;
 }
 
 function LabelNode({data:d}){
-  return <button className={`flow-project-label nodrag ${d.included?'included':''}`} onClick={()=>d.onSelect(d.entry.id)} aria-label={`查看项目${d.name}`} title={d.name}>
+  return <button className={`flow-project-label nodrag ${d.included?'included':''}`} onClick={()=>d.onSelect(d.entry.id)} aria-label={`查看项目${d.name}`} title={`${d.name}\n${d.densityText}`}>
     <strong>{d.name}</strong><span>{num(d.entry.amount)} {d.entry.unit}<small>{d.included?'计入本次':'未计入'}</small></span>
+    <span className="claim-density-label">{d.density?`均 ${densityNum(d.density.perDay)} 工日/日历天`:'密度待补'}</span>
   </button>;
 }
 
@@ -92,8 +95,9 @@ export default function FlowTimeline(props){
   const highlightTotal=()=>{setHighlightedId(null);if(scope&&!walking)selectScope(scope);};
   const nodes=[];
   complete.forEach((entry,i)=>{
-    const name=projects.find(p=>p.id===entry.project_id)?.name||'项目待补',data={entry,name,number:numbers.get(entry.id),included:included.has(entry.id),highlighted:highlightedId===entry.id||selectedId===entry.id,onSelect,onHighlight:setHighlightedId};
-    nodes.push({id:`label-${entry.id}`,type:'label',position:{x:16,y:top+i*rowHeight},data,style:{width:left-26,height:48},selectable:false,focusable:false});
+    const density=entryDensity(entry,rules),densityText=density?`平均密度：${num(density.days)} 工日 ÷ ${density.calendarDays} 个日历天 = ${densityNum(density.perDay)} 工日/天。纹理越密，平均投入越高；不代表实际逐日投入。`:'日期、数量或单位折算依据不足，无法计算平均密度。';
+    const name=projects.find(p=>p.id===entry.project_id)?.name||'项目待补',data={entry,name,density,densityText,number:numbers.get(entry.id),included:included.has(entry.id),highlighted:highlightedId===entry.id||selectedId===entry.id,onSelect,onHighlight:setHighlightedId};
+    nodes.push({id:`label-${entry.id}`,type:'label',position:{x:16,y:top+i*rowHeight},data,style:{width:left-26,height:58},selectable:false,focusable:false});
     nodes.push({id:`claim-${entry.id}`,type:'claim',position:{x:x(day(entry.start)),y:top+i*rowHeight+5},data,style:{width:Math.max(3,(day(entry.end)-day(entry.start)+1)/span*timeWidth),height:42},selectable:false,focusable:false});
   });
   shown.forEach((w,i)=>nodes.push({id:`range-${key(w)}`,type:'range',position:{x:0,y:rangeTop+i*rangeRowHeight},data:{window:w,current:isCurrent(w),onSelect:selectScope,left:x(day(w.start)),width:(day(w.end)-day(w.start)+1)/span*timeWidth},style:{width:resultX-20,height:rangeRowHeight},selectable:false,focusable:false}));

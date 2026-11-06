@@ -16,7 +16,7 @@
 .flow-date-tick{position:absolute;top:17px;font-size:11px;color:var(--muted);white-space:nowrap}
 .flow-grid-line{position:absolute;border-left:1px dashed var(--line);opacity:.7}
 .flow-lane-ground{position:absolute;left:12px;right:8px;border-bottom:1px solid color-mix(in srgb,var(--line) 55%,transparent)}
-.flow-project-label{width:100%;height:48px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:6px;border:0;background:none;text-align:left;padding:0 6px 0 0}
+.flow-project-label{width:100%;height:58px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:3px;border:0;background:none;text-align:left;padding:0 6px 0 0}
 .flow-project-label strong{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink);font-size:13px;font-weight:550}
 .flow-project-label>span{display:flex;gap:9px;align-items:center;color:var(--muted);font-size:11px}
 .flow-project-label small{font-size:10px;color:var(--muted)}
@@ -24,6 +24,9 @@
 .flow-claim{width:100%;height:42px;position:relative;container:flow-claim / inline-size}
 .claim-button{height:100%;width:100%;display:flex;align-items:center;gap:7px;position:relative;overflow:hidden;white-space:nowrap;padding:0 10px;border:1px solid color-mix(in srgb,var(--accent) 27%,var(--line));border-radius:7px;background:color-mix(in srgb,var(--tint) 80%,var(--paper));color:var(--ink);box-shadow:0 2px 3px #21356605}
 .claim-button::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent);opacity:.85}
+.claim-button.has-density{padding-bottom:8px}
+.claim-density-strip{position:absolute;left:3px;right:0;bottom:0;height:8px;border-top:1px solid color-mix(in srgb,var(--accent) 12%,transparent);background:repeating-linear-gradient(110deg,color-mix(in srgb,var(--accent) 42%,transparent) 0 2px,transparent 2px var(--density-spacing));pointer-events:none}
+.flow-project-label>.claim-density-label{font-size:10px;color:var(--muted);background:var(--soft);border-radius:3px;padding:0 4px;line-height:15px;white-space:nowrap}
 .claim-button>.claim-number{background:var(--paper);font-size:10px;min-width:19px;height:20px;border-radius:4px;flex-shrink:0;color:var(--accent)}
 .flow-claim-dates{min-width:0;overflow:hidden;text-overflow:ellipsis;font-size:11px;color:color-mix(in srgb,var(--ink) 85%,var(--accent))}
 .claim-button strong{margin-left:auto;font-weight:650;font-size:14px;display:flex;gap:3px;align-items:baseline;flex-shrink:0}

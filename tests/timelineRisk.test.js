@@ -1,7 +1,25 @@
 import {execFileSync} from 'node:child_process';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { entryNumbers, entryRisk, riskSegments, personRisk, riskExplanation, capacityExplanation, capacityScale, windowContributions, overlapPeriods, overlapSlice, exactOverlapWindow, orderedWindows, capacityComparison, overlapCapacity } from '../src/timelineRisk.js';
+import { entryDensity, entryNumbers, entryRisk, riskSegments, personRisk, riskExplanation, capacityExplanation, capacityScale, windowContributions, overlapPeriods, overlapSlice, exactOverlapWindow, orderedWindows, capacityComparison, overlapCapacity } from '../src/timelineRisk.js';
+
+test('平均密度包含首尾日，不采用认定量或误作工作日密度',()=>{
+  const entry={id:'a',start:'2026-03-02',end:'2026-03-27',unit:'工日',amount:18,recognized_amount:12};
+  assert.deepEqual(entryDensity(entry),{days:18,calendarDays:26,perDay:18/26});
+  assert.equal(entryDensity({...entry,end:entry.start,amount:2}).perDay,2);
+  assert.equal(entryDensity({...entry,amount:0}).perDay,0);
+});
+test('密度统一折算工日，缺参数或未知单位不显示伪造纹理',()=>{
+  const entry={id:'a',start:'2026-03-02',end:'2026-03-03',unit:'工时',amount:16};
+  assert.equal(entryDensity(entry,{hours_per_day:8}).perDay,1);
+  assert.equal(entryDensity({...entry,unit:'人月',amount:1},{days_per_month:20}).perDay,10);
+  for(const rules of [{},{hours_per_day:0},{hours_per_day:-8}])assert.equal(entryDensity(entry,rules),null);
+  assert.equal(entryDensity({...entry,unit:'项'}),null);
+});
+test('缺失、非法或倒置日期及非法数量不生成密度',()=>{
+  const entry={id:'a',start:'2026-03-02',end:'2026-03-03',unit:'工日',amount:1};
+  for(const patch of [{start:''},{start:'2026-02-30'},{end:'2026-03-01'},{amount:null},{amount:-1},{amount:Infinity}])assert.equal(entryDensity({...entry,...patch}),null);
+});
 
 const broad={start:'2026-03-02',end:'2026-04-30',rank:0,entry_ids:['wide','short1','short2','later']};
 const red={start:'2026-03-16',end:'2026-03-27',rank:3,entry_ids:['short1','short2']};
