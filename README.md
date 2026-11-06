@@ -4,7 +4,7 @@
 
 **按人员查看跨项目投入，让每一项累计都有来源。**
 
-![Version](https://img.shields.io/badge/version-0.4.16-228be6)
+![Version](https://img.shields.io/badge/version-0.4.17-228be6)
 ![Rules](https://img.shields.io/badge/rules-0.1.0%20%7C%20simulation-d97706)
 ![React](https://img.shields.io/badge/React-19-149eca?logo=react&logoColor=white)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-3776ab?logo=python&logoColor=white)
@@ -23,6 +23,8 @@
 ![亮色工作台：跨项目泳道、独立核查窗口及右侧来源计算](00-docs/images/worktime-light.png)
 
 项目投入以淡蓝时间条展示，核查范围以短竖刻度和细线独立成行，选中后突出起止日期与蓝色范围线；参与累计的完整申报通过连接线对应右侧分项与参考轴。截图使用内置模拟数据。
+
+界面使用随本地服务提供的苹方简体 WOFF2，覆盖常规、中等与半粗三个字重；Windows 无需额外安装字体。内部测试字体来源和映射见 [字体说明](public/fonts/README.md)。
 
 <details>
 <summary>查看深色主题</summary>

@@ -1,0 +1,23 @@
+/* Self-hosted PingFang from the font files supplied for this internal test. */
+@font-face{
+  font-family:'PingFang SC';
+  src:url('/fonts/pingfang-sc-regular.woff2') format('woff2');
+  font-style:normal;
+  font-weight:400;
+  font-display:swap;
+}
+@font-face{
+  font-family:'PingFang SC';
+  src:url('/fonts/pingfang-sc-medium.woff2') format('woff2');
+  font-style:normal;
+  font-weight:500;
+  font-display:swap;
+}
+@font-face{
+  font-family:'PingFang SC';
+  src:url('/fonts/pingfang-sc-semibold.woff2') format('woff2');
+  font-style:normal;
+  font-weight:600;
+  font-display:swap;
+}
+:root{--font-sans:'PingFang SC','Microsoft YaHei UI',system-ui,sans-serif}

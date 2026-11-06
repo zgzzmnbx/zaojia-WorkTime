@@ -5,6 +5,7 @@ import './style.css';
 import CapacityGauge from './CapacityGauge.jsx';
 import Timeline from './FlowTimeline.jsx';
 import './workbench.css';
+import './fonts.css';
 import WindowContributions from './WindowContributions.jsx';
 import { personRisk, riskExplanation, capacityExplanation, overlapPeriods, exactOverlapWindow, orderedWindows } from './timelineRisk.js';
 
