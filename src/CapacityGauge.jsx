@@ -1,10 +1,11 @@
-import React, {useEffect,useRef,useState} from 'react';
+import React, {useEffect,useId,useRef,useState} from 'react';
 import {capacityScale} from './timelineRisk.js';
 
 const format=value=>Number(value).toLocaleString('zh-CN',{maximumFractionDigits:2});
 
 export default function CapacityGauge({window,rules,label='整段累计',hideCaption=false,vertical=false,compact=false}) {
   const ref=useRef(null),[width,setWidth]=useState(600);
+  const bandId=useId();
   useEffect(()=>{
     const observer=new ResizeObserver(([entry])=>setWidth(entry.contentRect.width));
     if(ref.current)observer.observe(ref.current);
@@ -25,28 +26,33 @@ export default function CapacityGauge({window,rules,label='整段累计',hideCap
   const description=`${window.start}至${window.end}，模拟工日参考：${scale.markers.map(m=>m.names.join('、')+format(m.value)).join('，')}；${unknown?'本段工时待补，超出量待核':label+format(scale.demand)+'工日'}${scale.tolerance?`，参考值均含${format(scale.tolerance)}工日容差`:''}${window.missing_calendar?.length?'；日历未维护，参考值为估算':''}`;
   const stops=[0,...scale.values,scale.max];
   if(vertical){
-    const axis=54,top=24,bottom=compact?174:260,y=value=>bottom-value/scale.max*(bottom-top);
+    const axis=68,top=22,bottom=compact?184:260,y=value=>bottom-value/scale.max*(bottom-top);
     const refs=[...scale.markers].reverse().map(m=>({...m,y:y(m.value)}));
-    refs.forEach((m,i)=>m.labelY=Math.max(top,m.y,i?refs[i-1].labelY+42:top));
-    for(let i=refs.length-1;i>=0;i--)refs[i].labelY=Math.min(refs[i].labelY,i<refs.length-1?refs[i+1].labelY-42:bottom-26);
+    refs.forEach((m,i)=>m.labelY=Math.max(top+6,m.y,i?refs[i-1].labelY+38:top+6));
+    for(let i=refs.length-1;i>=0;i--)refs[i].labelY=Math.min(refs[i].labelY,i<refs.length-1?refs[i+1].labelY-38:bottom-12);
     const cy=y(scale.demand);
     return <figure ref={ref} className={`capacity-gauge capacity-vertical rank-${window.rank}`} aria-label={description}>
       {unknown&&<div className="capacity-pending">本段工时待补 · 超出量待核</div>}
-      <svg width="100%" height={compact?196:282} role="img" aria-label={description}>
-        {stops.slice(0,-1).map((start,i)=><rect key={i} className={`capacity-zone rank-${i}`} x={axis-4} y={y(stops[i+1])} width="8" height={Math.max(0,y(start)-y(stops[i+1]))}/>)}
+      <svg width="100%" height={bottom+24} viewBox={`0 0 202 ${bottom+24}`} role="img" aria-label={description}>
+        <defs><clipPath id={bandId}><rect x={axis-7} y={top} width="14" height={bottom-top} rx="7"/></clipPath></defs>
+        <g clipPath={`url(#${bandId})`}>
+          {stops.slice(0,-1).map((start,i)=><rect key={i} className={`capacity-zone rank-${i}`} x={axis-7} y={y(stops[i+1])} width="14" height={Math.max(0,y(start)-y(stops[i+1]))}/>)}
+        </g>
         <text className="capacity-zero" x={axis} y={bottom+17} textAnchor="middle">0</text>
         {refs.map((m,i)=><g className="capacity-reference" data-value={m.value} key={i}>
           <title>{m.names.join(' / ')}参考：{format(m.value)}工日</title>
-          <line x1={axis-7} x2={axis+9} y1={m.y} y2={m.y}/>
-          <path className="capacity-leader" d={`M ${axis+9} ${m.y} L ${axis+25} ${m.labelY}`}/>
-          <text x={axis+31} y={m.labelY-3}>{m.names.join(' / ')}</text>
-          <text className="capacity-reference-value" x={axis+31} y={m.labelY+14}>{format(m.value)}</text>
+          <line x1={axis-7} x2={axis+7} y1={m.y} y2={m.y}/>
+          <path className="capacity-leader" d={`M ${axis+7} ${m.y} C ${axis+20} ${m.y}, ${axis+22} ${m.labelY}, ${axis+32} ${m.labelY}`}/>
+          <text x={axis+38} y={m.labelY-3}>{m.names.join(' / ')}</text>
+          <text className="capacity-reference-value" x={axis+38} y={m.labelY+13}>{format(m.value)}</text>
         </g>)}
         {!unknown&&<g className="capacity-current" data-value={scale.demand}>
           <title>{label} {format(scale.demand)}工日</title>
-          <text x={axis-12} y={cy-5} textAnchor="end">当前</text>
-          <text x={axis-12} y={cy+12} textAnchor="end">{format(scale.demand)}</text>
-          <path d={`M ${axis-5} ${cy} L ${axis} ${cy-5} L ${axis+5} ${cy} L ${axis} ${cy+5} Z`}/>
+          <rect className="capacity-current-pill" x="0" y={cy-18} width="49" height="36" rx="7"/>
+          <text className="capacity-current-caption" x="24.5" y={cy-4} textAnchor="middle">当前</text>
+          <text className="capacity-current-number" x="24.5" y={cy+11} textAnchor="middle" fontSize={format(scale.demand).length>6?10:13}>{format(scale.demand)}</text>
+          <line x1="49" x2={axis-6} y1={cy} y2={cy}/>
+          <circle className="capacity-current-dot" cx={axis} cy={cy} r="5"/>
         </g>}
       </svg>
       {window.missing_calendar?.length>0&&<figcaption className="fine">{window.missing_calendar.join('、')}年日历未维护，参考值按工作日估算。</figcaption>}
