@@ -1,0 +1,16 @@
+node_modules/
+dist/
+data/
+Codex-Temp/
+.playwright-cli/
+__pycache__/
+*.pyc
+data-local/
+output/playwright/
+00-初版任务包/
+.env
+.env.*
+!.env.example
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
