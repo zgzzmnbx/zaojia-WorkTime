@@ -31,6 +31,8 @@ function RangeNode({data:d}){
   return <div className={`flow-range-row ${d.current?'current':''}`} data-window={key(d.window)}>
     <button className="flow-range-label nodrag" onClick={()=>d.onSelect(d.window)}><span>{date(d.window.start)}—{date(d.window.end)}</span><small>{d.window.entry_ids.length} 条累计{d.current?' · 当前':''}</small></button>
     <button className="flow-range nodrag" aria-pressed={d.current} aria-label={`选择${d.window.start}至${d.window.end}${d.window.label}范围`} style={{left:d.left,width:d.width}} onClick={()=>d.onSelect(d.window)} title="各时段独立计算，结果不能相加">
+      {d.current&&<span className="flow-range-endpoints" aria-hidden="true"><span>{date(d.window.start)}</span><span className="endpoint-separator">—</span><span>{date(d.window.end)}</span></span>}
+      <span className="flow-range-line" aria-hidden="true"/>
       <span className="flow-range-summary"><span className="flow-sigma" aria-hidden="true">Σ</span><b>{num(d.window.demand)}<small> 工日</small></b><span className={`badge badge-sm flow-risk rank-${d.window.rank}`}>{riskLabels[d.window.rank]}</span></span>
     </button>
   </div>;
@@ -80,12 +82,12 @@ export default function FlowTimeline(props){
   const shown=walking?(scope?[scope]:[]):sorted.filter(w=>showAll||w.rank>0||isCurrent(w));
   const start=complete.length?Math.min(...complete.map(e=>day(e.start)))-3:0,end=complete.length?Math.max(...complete.map(e=>day(e.end)))+4:28,span=Math.max(28,end-start+1);
   const x=n=>left+(n-start)/span*timeWidth;
-  const top=64,rowHeight=70,rangeTop=top+complete.length*rowHeight+30;
-  const rangesEnd=rangeTop+shown.length*44;
+  const top=64,rowHeight=70,rangeRowHeight=56,rangeTop=top+complete.length*rowHeight+30;
+  const rangesEnd=rangeTop+shown.length*rangeRowHeight;
   const auxiliaryY=rangesEnd+(hidden.length&&!walking?34:10);
   const range=scope;
   const selectedRangeIndex=shown.findIndex(isCurrent);
-  const guideBottom=rangeTop+Math.max(0,selectedRangeIndex)*44+30;
+  const guideBottom=rangeTop+Math.max(0,selectedRangeIndex)*rangeRowHeight+48;
   const height=Math.max(460,auxiliaryY+48,24+resultHeight+18);
   const highlightTotal=()=>{setHighlightedId(null);if(scope&&!walking)selectScope(scope);};
   const nodes=[];
@@ -94,7 +96,7 @@ export default function FlowTimeline(props){
     nodes.push({id:`label-${entry.id}`,type:'label',position:{x:16,y:top+i*rowHeight},data,style:{width:left-26,height:48},selectable:false,focusable:false});
     nodes.push({id:`claim-${entry.id}`,type:'claim',position:{x:x(day(entry.start)),y:top+i*rowHeight+5},data,style:{width:Math.max(3,(day(entry.end)-day(entry.start)+1)/span*timeWidth),height:42},selectable:false,focusable:false});
   });
-  shown.forEach((w,i)=>nodes.push({id:`range-${key(w)}`,type:'range',position:{x:0,y:rangeTop+i*44},data:{window:w,current:isCurrent(w),onSelect:selectScope,left:x(day(w.start)),width:(day(w.end)-day(w.start)+1)/span*timeWidth},style:{width:resultX-20,height:44},selectable:false,focusable:false}));
+  shown.forEach((w,i)=>nodes.push({id:`range-${key(w)}`,type:'range',position:{x:0,y:rangeTop+i*rangeRowHeight},data:{window:w,current:isCurrent(w),onSelect:selectScope,left:x(day(w.start)),width:(day(w.end)-day(w.start)+1)/span*timeWidth},style:{width:resultX-20,height:rangeRowHeight},selectable:false,focusable:false}));
   if(range)nodes.push({id:'calculation',type:'result',position:{x:resultX,y:24},data:{scope,entries,projects,rules,numbers,onSelect,onRisk,onHighlight:setHighlightedId,highlightedId,onTotal:highlightTotal,onHeight:setResultHeight},style:{width:resultWidth},selectable:false,focusable:false});
   // Known dimensions keep controlled nodes visible while hover data changes.
   nodes.forEach(node=>{node.initialWidth=node.style.width;node.initialHeight=node.style.height||resultHeight;});
