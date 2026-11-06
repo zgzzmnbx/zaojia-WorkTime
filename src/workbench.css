@@ -52,6 +52,20 @@ body{font-family:'Microsoft YaHei UI','PingFang SC',system-ui,sans-serif;font-si
 .table td small{font-size:10px;color:var(--muted)}
 .table tr:hover td{background:color-mix(in srgb,var(--tint) 30%,var(--paper))}
 .table .text-link{font-weight:500}
+.person-workspace>.person-scroll>.timeline-entries{margin-top:10px;border-radius:8px}
+.timeline-entries .table{table-layout:fixed;font-size:12px}
+.timeline-entries .table th,.timeline-entries .table td{padding:5px 14px}
+.timeline-entries .table th{height:32px;font-size:11px}
+.timeline-entries .table td{height:44px;vertical-align:middle}
+.timeline-entries .table th:nth-child(2){width:30%}
+.timeline-entries .table th:nth-child(3){width:112px}
+.timeline-entries .table th:last-child{width:68px}
+.timeline-entries .table td:nth-child(2),.timeline-entries .table td.numeric{white-space:nowrap}
+.timeline-entries .entry-project{display:flex;align-items:center;gap:8px;min-width:0}
+.timeline-entries .entry-index{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;width:19px;height:20px;border-radius:4px;background:var(--tint);color:var(--accent);font-size:10px}
+.timeline-entries .text-link{font-size:13px;color:var(--ink);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.timeline-entries .text-link:hover{color:var(--accent)}
+.timeline-entries .table .btn-sm{height:28px;min-height:28px;padding-inline:6px;font-size:11px}
 .page-scroll{padding:20px}.page-scroll>.table,.page-scroll>.table-scroll{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--paper)}
 .evidence{width:285px;border-left:1px solid var(--line);background:var(--paper);box-shadow:-8px 0 24px #1d335706}
 .evidence-title{min-height:60px;padding:12px 16px}
