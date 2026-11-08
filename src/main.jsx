@@ -9,6 +9,7 @@ import './fonts.css';
 import './floating.css';
 import ThemePicker from './ThemePicker.jsx';
 import ScheduleRiskList from './ScheduleRiskList.jsx';
+import RiskEvidence from './RiskEvidence.jsx';
 import { scheduleRisks } from './scheduleRisks.js';
 import WindowContributions from './WindowContributions.jsx';
 import { personRisk, riskExplanation, capacityExplanation, overlapPeriods, exactOverlapWindow, orderedWindows } from './timelineRisk.js';
@@ -64,12 +65,12 @@ function Editor({spec,state,actor,setActor,onSave,onClose}){
   </form></Modal>;
 }
 
-function Detail({result,scope,overlap,entryId,projects,onEdit,onPrint,onClose}){
+function Detail({result,scope,overlap,entryId,projects,onEdit,onPrint,onClose,risk}){
   const entry=result.entries.find(e=>e.id===entryId);const w=overlap?null:entry?(scope?.entry_ids.includes(entryId)?scope:null):scope;
   const overlapWindow=exactOverlapWindow(overlap,result.windows);
   const check=result.entry_checks.find(x=>x.id===entryId);
   return <aside className="evidence"><div className="evidence-title"><h3>{entry?'申报依据':'核验依据'}</h3><button className="btn btn-ghost icon" aria-label="打印核验明细" title="打印核验明细" onClick={onPrint}><Icon as={Printer}/></button><button className="btn btn-ghost icon" aria-label="收起核验依据" title="收起核验依据" onClick={onClose}><Icon as={X}/></button></div>
-    <div className="evidence-body">{entry?<>
+    <div className="evidence-body">{risk?<RiskEvidence risk={risk} result={result} projects={projects} onEdit={onEdit}/>:entry?<>
       <div className="detail-project">{projects.find(p=>p.id===entry.project_id)?.name}</div><div className="detail-overview"><div className="detail-amount">{num(entry.amount)}<small>{entry.unit}</small></div><div className="detail-status">{entryNote(entry)&&badge(entryNote(entry))}<button className="btn btn-ghost btn-sm" onClick={()=>onEdit(entry)}><Icon as={PencilSimple} size={14}/>编辑</button></div></div><div className="detail-meta">{entry.start||'日期待补'} — {entry.end||'日期待补'}</div>
       {overlap?<p className="fine">当前查看{iso(overlap.start)}—{iso(overlap.end)}重叠段；本页数量是整条申报量。{overlapWindow?`该段完整申报合计${num(overlapWindow.demand)}工日。`:'跨出本段的申报不能直接作为本段工时。'}</p>:scope&&!w&&<p className="fine">本条不计入当前所选时段的合计。</p>}
       {w?.rank>=2&&<details className="detail-section" key={`related-${entry.id}-${w.start}-${w.end}`}><summary>相关时段累计</summary><p>{riskExplanation(w,result.rule_snapshot)}</p></details>}
@@ -92,11 +93,12 @@ function App(){
   const [loading,setLoading]=useState(false);
   const [showEvidence,setShowEvidence]=useState(false);
   const [recordsTab,setRecordsTab]=useState('projects');
+  const [riskId,setRiskId]=useState('');
   const [scopeKey,setScopeKey]=useState('');
   const [overlapKey,setOverlapKey]=useState('');
   const [walking,setWalking]=useState(false);
   const evidenceTrigger=useRef(null);
-  function openEntry(id){evidenceTrigger.current=document.activeElement;setEntryId(id);setShowEvidence(true);}
+  function openEntry(id){setRiskId('');evidenceTrigger.current=document.activeElement;setEntryId(id);setShowEvidence(true);}
   function closeEvidence(){setShowEvidence(false);requestAnimationFrame(()=>evidenceTrigger.current?.focus());}
   const setActor=v=>{setActorRaw(v);localStorage.setItem('hours-actor',v);};
   useEffect(()=>{document.documentElement.dataset.theme=dark?'dark':'light';localStorage.setItem('hours-theme',dark?'dark':'light');},[dark]);
@@ -106,18 +108,28 @@ function App(){
   const state=data?.state;
   const result=data?.results.find(r=>r.person.id===personId);
   const risks=scheduleRisks(result);
+  const selectedRisk=risks.find(risk=>risk.id===riskId);
   const scope=result?.windows.find(w=>`${w.start}/${w.end}`===scopeKey)||result?.worst;
   const overlaps=result?overlapPeriods(result.entries):[];
   const selectedOverlap=overlaps.find(o=>`${o.start}/${o.end}`===overlapKey);
   const walkWindows=orderedWindows(result?.windows||[]);
   const walkIndex=walkWindows.findIndex(w=>w.start===scope?.start&&w.end===scope?.end);
   function selectOverlap(o){setWalking(false);setOverlapKey(`${o.start}/${o.end}`);setEntryId('');}
-  function applyScope(w){setScopeKey(`${w.start}/${w.end}`);setEntryId('');setOverlapKey('');}
+  function applyScope(w){setRiskId('');setScopeKey(`${w.start}/${w.end}`);setEntryId('');setOverlapKey('');}
   function selectScope(w){setWalking(false);applyScope(w);}
+  function selectRisk(item){
+    evidenceTrigger.current=document.activeElement;
+    const window=item.window||result.windows.find(w=>w.start===item.start&&w.end===item.end&&item.entryIds.every(id=>w.entry_ids.includes(id)));
+    if(window)selectScope(window);
+    else {setWalking(false);setOverlapKey('');}
+    setEntryId(item.kind==='finding'?(item.entryIds[0]||''):'');
+    setRiskId(item.id);setShowEvidence(true);
+    requestAnimationFrame(()=>document.querySelector('.person-scroll')?.scrollTo({top:0,behavior:'smooth'}));
+  }
   function startWalk(){if(!walkWindows.length)return;setWalking(true);applyScope(walkWindows[0]);setShowEvidence(false);requestAnimationFrame(()=>document.querySelector('.person-scroll')?.scrollTo({top:0,behavior:'instant'}));}
   function stepWalk(delta){const next=walkIndex+delta;if(next<0||next>=walkWindows.length)return;applyScope(walkWindows[next]);}
   function exitWalk(){setWalking(false);}
-  function choosePerson(id){setPersonId(id);setEntryId('');setScopeKey('');setOverlapKey('');setWalking(false);}
+  function choosePerson(id){setRiskId('');setPersonId(id);setEntryId('');setScopeKey('');setOverlapKey('');setWalking(false);}
   async function save(next,who,action,restore=false){await request(restore?'/restore':'/save',{state:next,revision:data.revision,actor:who,action});await refresh();setToast('已保存并重新核验');}
   const projectFields=[['code','项目编号','text',null,true],['name','项目名称','text',null,true],['build_start','建设开始','date'],['build_end','建设结束','date'],['impl_start','实施开始','date'],['impl_end','实施结束','date'],['impl_source','实施期确认依据','textarea']];
   const personFields=[['name','姓名','text',null,true],['code','工号','text',null,true],['company','所属单位','text',null,true],['title','职称'],['title_from','职称有效开始','date'],['title_to','职称有效结束','date'],['title_source','职称证明依据','textarea']];
@@ -150,17 +162,17 @@ function App(){
     {!data?<div className="empty"><span className="loading loading-spinner"/>正在读取台账</div>:<>
       <h1 className="sr-only">{nav.find(n=>n[0]===view)?.[1]}</h1>
       {view==='timeline'&&<div className="timeline-workspace"><aside className="people-panel"><div className="people-filter"><Icon as={Funnel} size={16}/><select aria-label="人员筛选" value={filter} onChange={e=>setFilter(e.target.value)}><option value="all">全部人员</option><option value="warning">有核查事项</option><option value="pending">待补依据</option></select><button className="btn btn-ghost icon" title="新增人员" aria-label="新增人员" onClick={()=>edit('people')}><Icon as={Plus} size={16}/></button></div><div className="people-list">{list.map(r=><button className={'person-card card '+(personId===r.person.id?'active':'')} key={r.person.id} onClick={()=>choosePerson(r.person.id)}><div className="person-name"><span className="avatar-letter">{r.person.name.slice(-2)}</span><strong>{r.person.name}</strong><span className={'risk-dot rank-'+personRisk(r)}/></div><div className="person-company">{r.person.company} · {r.person.code}</div><div className="person-bottom"><span>{new Set(r.entries.map(e=>e.project_id)).size} 项目</span><span className={`badge badge-sm person-risk-text rank-${personRisk(r)}`}>{personSummary(r)}</span></div>{r.pending_count>0&&<small className="pending-label">{r.pending_count} 项待补依据</small>}</button>)}{!list.length&&<div className="empty compact">暂无匹配人员</div>}</div></aside>
-      {result?<><div className="person-workspace"><div className="person-scroll"><Timeline key={personId} detailLayout={{count:recordsTab==='risks'?Math.max(1,risks.length):result.entries.length,rowHeight:recordsTab==='risks'?64:44,headerHeight:72}} entries={result.entries} projects={state.projects} windows={result.windows} scope={scope} selectScope={selectScope} overlaps={overlaps} selectedOverlap={selectedOverlap} selectOverlap={selectOverlap} walking={walking} walkIndex={walkIndex} walkCount={walkWindows.length} startWalk={startWalk} stepWalk={stepWalk} exitWalk={exitWalk} rules={result.rule_snapshot} calendars={state.calendars} onRisk={value=>setModal({type:'risk-window',value})} selectedId={entryId} onSelect={openEntry} onOverlap={value=>setModal(value?{type:'overlap',value}:{type:'chart-help'})} heading={<div className="person-inline"><h2 title={`${result.person.company} / ${result.person.code} / ${result.person.title||'职称待补'}`}>{result.person.name}</h2><button ref={evidenceTrigger} className="btn btn-ghost btn-sm summary-toggle" aria-label="查看完整核验依据" aria-expanded={showEvidence} onClick={()=>{setEntryId('');setShowEvidence(v=>!v);}}>{selectedOverlap?badge(exactOverlapWindow(selectedOverlap,result.windows)?.label||'重叠段待核'):badge(scope?.label||'无法判断','rank-'+(scope?.rank??'none'))}<Icon as={Info} size={16}/></button></div>}/>
+      {result?<><div className="person-workspace"><div className="person-scroll"><Timeline key={personId} detailLayout={{count:recordsTab==='risks'?Math.max(1,risks.length):result.entries.length,rowHeight:recordsTab==='risks'?64:44,headerHeight:72}} entries={result.entries} projects={state.projects} windows={result.windows} scope={scope} selectScope={selectScope} overlaps={overlaps} selectedOverlap={selectedOverlap} selectOverlap={selectOverlap} walking={walking} walkIndex={walkIndex} walkCount={walkWindows.length} startWalk={startWalk} stepWalk={stepWalk} exitWalk={exitWalk} rules={result.rule_snapshot} calendars={state.calendars} onRisk={value=>setModal({type:'risk-window',value})} selectedId={entryId} onSelect={openEntry} onOverlap={value=>setModal(value?{type:'overlap',value}:{type:'chart-help'})} heading={<div className="person-inline"><h2 title={`${result.person.company} / ${result.person.code} / ${result.person.title||'职称待补'}`}>{result.person.name}</h2><button ref={evidenceTrigger} className="btn btn-ghost btn-sm summary-toggle" aria-label="查看完整核验依据" aria-expanded={showEvidence} onClick={()=>{setRiskId('');setEntryId('');setShowEvidence(v=>!v);}}>{selectedOverlap?badge(exactOverlapWindow(selectedOverlap,result.windows)?.label||'重叠段待核'):badge(scope?.label||'无法判断','rank-'+(scope?.rank??'none'))}<Icon as={Info} size={16}/></button></div>}/>
         <section className="records-panel card bg-base-100">
           <div className="tabs tabs-border records-tabs" role="tablist" aria-label="人员明细" onKeyDown={e=>{if(['ArrowLeft','ArrowRight','Home','End'].includes(e.key)){e.preventDefault();const next=e.key==='Home'?'projects':e.key==='End'?'risks':recordsTab==='projects'?'risks':'projects';setRecordsTab(next);document.getElementById(`records-tab-${next}`)?.focus();}}}>
             <button className={`tab ${recordsTab==='projects'?'tab-active':''}`} id="records-tab-projects" role="tab" aria-selected={recordsTab==='projects'} aria-controls="records-projects" tabIndex={recordsTab==='projects'?0:-1} onClick={()=>setRecordsTab('projects')}>项目<span className="records-count">{result.entries.length}</span></button>
             <button className={`tab ${recordsTab==='risks'?'tab-active':''}`} id="records-tab-risks" role="tab" aria-selected={recordsTab==='risks'} aria-controls="records-risks" tabIndex={recordsTab==='risks'?0:-1} onClick={()=>setRecordsTab('risks')} title="当前人员全部工期预警与待补事项；各累计时段独立核查，不能相加">风险<span className="records-count">{risks.length}</span></button>
           </div>
           <div role="tabpanel" id="records-projects" aria-labelledby="records-tab-projects" hidden={recordsTab!=='projects'}>{entryTable(result.entries,true)}</div>
-          <div role="tabpanel" id="records-risks" aria-labelledby="records-tab-risks" hidden={recordsTab!=='risks'}><ScheduleRiskList items={risks} result={result} scope={scope} projects={state.projects} onLocate={w=>{selectScope(w);requestAnimationFrame(()=>document.querySelector('.person-scroll')?.scrollTo({top:0,behavior:'smooth'}));}} onEntry={openEntry} onEvidence={()=>{setEntryId('');setShowEvidence(true);}}/></div>
+          <div role="tabpanel" id="records-risks" aria-labelledby="records-tab-risks" hidden={recordsTab!=='risks'}><ScheduleRiskList items={risks} result={result} scope={scope} projects={state.projects} selectedRiskId={riskId} onSelect={selectRisk}/></div>
         </section>
 </div>
-      </div>{showEvidence&&<Detail result={result} scope={scope} overlap={selectedOverlap} entryId={entryId} projects={state.projects} onEdit={e=>edit('entries',e)} onPrint={print} onClose={closeEvidence}/>}</>:<div className="empty onboarding"><Icon as={ChartBarHorizontal} size={48}/><h2>从第一个项目的人员投入开始</h2><p>建立人员与项目，再逐条录入工时，形成跨项目轨迹。</p><div><button className="btn" onClick={()=>edit('projects')}>新增项目</button><button className="btn btn-primary" onClick={()=>edit('people')}>新增人员</button></div><a className="text-link" href="/?demo=1">先看模拟案例</a></div>}</div>}
+      </div>{showEvidence&&<Detail risk={selectedRisk} result={result} scope={scope} overlap={selectedOverlap} entryId={entryId} projects={state.projects} onEdit={e=>edit('entries',e)} onPrint={print} onClose={closeEvidence}/>}</>:<div className="empty onboarding"><Icon as={ChartBarHorizontal} size={48}/><h2>从第一个项目的人员投入开始</h2><p>建立人员与项目，再逐条录入工时，形成跨项目轨迹。</p><div><button className="btn" onClick={()=>edit('projects')}>新增项目</button><button className="btn btn-primary" onClick={()=>edit('people')}>新增人员</button></div><a className="text-link" href="/?demo=1">先看模拟案例</a></div>}</div>}
       {view==='people'&&<div className="page-scroll"><table className="table table-sm"><thead><tr><th>姓名</th><th>单位 / 工号</th><th>职称 / 有效期</th><th>三类检查</th><th/></tr></thead><tbody>{list.map(r=><tr key={r.person.id}><td><button className="text-link" onClick={()=>{choosePerson(r.person.id);setView('timeline');}}>{r.person.name}</button></td><td>{r.person.company}<small>{r.person.code}</small></td><td>{r.person.title||'待补'}<small>{r.person.title_from||'—'} 至 {r.person.title_to||'—'}</small></td><td>{Object.entries(r.checks).map(([k,v])=><small key={k}>{k}：{v}</small>)}</td><td><button className="btn btn-ghost btn-sm" onClick={()=>edit('people',r.person)}>编辑</button></td></tr>)}</tbody></table></div>}
       {view==='projects'&&<div className="page-scroll"><table className="table table-sm"><thead><tr><th>项目</th><th>建设期间</th><th>实施期间</th><th>投入人员</th><th/></tr></thead><tbody>{state.projects.filter(p=>`${p.name} ${p.code}`.includes(search)).map(p=><tr key={p.id}><td><strong>{p.name}</strong><small>{p.code}</small></td><td>{p.build_start||'—'}<small>至 {p.build_end||'—'}</small></td><td>{p.impl_start||'—'}<small>至 {p.impl_end||'—'}</small></td><td><div className="project-people">{state.people.filter(u=>state.entries.some(e=>e.project_id===p.id&&e.person_id===u.id)).map(u=><button className="text-link" key={u.id} onClick={()=>{choosePerson(u.id);setView('timeline');}}>{u.name}（{u.code}）</button>)}</div></td><td><button className="btn btn-ghost btn-sm" onClick={()=>edit('projects',p)}>编辑</button></td></tr>)}</tbody></table></div>}
       {view==='entries'&&<div className="page-scroll">{entryTable(allEntries)}</div>}
