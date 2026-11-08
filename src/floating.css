@@ -54,7 +54,8 @@
 }
 .person-scroll { display:flex; flex-direction:column; padding-bottom:0; }
 .person-scroll>.flow-timeline { flex-shrink:0; }
-.person-workspace>.person-scroll>.timeline-entries { flex:1 0 auto; margin-top:0; }
+.person-workspace>.person-scroll>.timeline-entries { flex:0 0 auto; margin-top:0; }
+.person-workspace>.person-scroll>.timeline-entries .table td { height:var(--entry-row-height,44px); }
 .evidence { margin-left:0; border:1px solid var(--line); border-radius:var(--radius-box); overflow:hidden; box-shadow:var(--surface-shadow); }
 .page-scroll>.table-scroll,.page-scroll>.table { border-radius:var(--radius-box); box-shadow:var(--surface-shadow); }
 .app-modal .modal-box { border-radius:var(--radius-box); }

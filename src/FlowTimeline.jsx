@@ -77,7 +77,14 @@ export default function FlowTimeline(props){
   const hostRef=useRef(null),instanceRef=useRef(null);
   const [width,setWidth]=useState(1000),[showAll,setShowAll]=useState(false),[highlightedId,setHighlightedId]=useState(null);
   const [zoom,setZoom]=useState(1),[resultHeight,setResultHeight]=useState(530);
+  const [availableHeight,setAvailableHeight]=useState(0),[toolbarHeight,setToolbarHeight]=useState(52);
   useEffect(()=>{const observer=new ResizeObserver(([e])=>setWidth(e.contentRect.width));if(hostRef.current)observer.observe(hostRef.current);return()=>observer.disconnect();},[]);
+  useEffect(()=>{
+    const workspace=hostRef.current.closest('.person-scroll'),toolbar=hostRef.current.previousElementSibling;
+    const observer=new ResizeObserver(()=>{setAvailableHeight(workspace.clientHeight);setToolbarHeight(toolbar.offsetHeight);});
+    observer.observe(workspace);observer.observe(toolbar);
+    return()=>observer.disconnect();
+  },[]);
   useEffect(()=>setHighlightedId(null),[scope?.start,scope?.end]);
   const complete=entries.filter(e=>e.start&&e.end&&!['withdrawn','returned'].includes(e.status)&&e.duplicate!=='duplicate');
   const totalWidth=Math.max(width,820),baseZoom=Math.min(1,width/820),left=154,resultWidth=228,resultX=totalWidth-resultWidth-14,timeWidth=resultX-left-68;
@@ -89,23 +96,37 @@ export default function FlowTimeline(props){
   const shown=walking?(scope?[scope]:[]):sorted.filter(w=>showAll||w.rank>0||isCurrent(w));
   const start=complete.length?Math.min(...complete.map(e=>day(e.start)))-3:0,end=complete.length?Math.max(...complete.map(e=>day(e.end)))+4:28,span=Math.max(28,end-start+1);
   const x=n=>left+(n-start)/span*timeWidth;
-  const top=64,rowHeight=70,rangeRowHeight=48;
+  const top=64;
+  // Share spare viewport height between real diagram rows and table rows, not blank card space.
+  const foldSpace=hidden.length&&!walking?34:10;
+  const naturalDiagramHeight=top+complete.length*70-8+20+30+shown.length*48+foldSpace+48;
+  const naturalHeight=Math.max(460,naturalDiagramHeight,24+resultHeight+18);
+  const spare=Math.max(0,availableHeight-toolbarHeight-12-34-entries.length*44-Math.ceil(naturalHeight*baseZoom));
+  const tableRowHeight=44+Math.min(20,Math.floor(spare*.28/Math.max(1,entries.length)));
+  const diagramShare=(spare-entries.length*(tableRowHeight-44))/baseZoom+Math.max(0,naturalHeight-naturalDiagramHeight);
+  const rowShare=diagramShare/Math.max(1,complete.length*1.6+shown.length);
+  const rowHeight=70+Math.min(62,rowShare*1.6),rangeRowHeight=48+Math.min(28,rowShare);
+  useEffect(()=>{
+    const workspace=hostRef.current.closest('.person-scroll');
+    workspace.style.setProperty('--entry-row-height',`${tableRowHeight}px`);
+    return()=>workspace.style.removeProperty('--entry-row-height');
+  },[tableRowHeight]);
   const projectBottom=top+complete.length*rowHeight-8,reviewTop=projectBottom+20,rangeTop=reviewTop+30;
   const rangesEnd=rangeTop+shown.length*rangeRowHeight;
   const auxiliaryY=rangesEnd+(hidden.length&&!walking?34:10);
   const range=scope;
   const selectedRangeIndex=shown.findIndex(isCurrent);
-  const guideBottom=rangeTop+Math.max(0,selectedRangeIndex)*rangeRowHeight+40;
+  const guideBottom=rangeTop+Math.max(0,selectedRangeIndex)*rangeRowHeight+(rangeRowHeight-48)/2+40;
   const height=Math.max(460,auxiliaryY+48,24+resultHeight+18);
   const highlightTotal=()=>{setHighlightedId(null);if(scope&&!walking)selectScope(scope);};
   const nodes=[];
   complete.forEach((entry,i)=>{
     const density=entryDensity(entry,rules),densityText=density?`平均密度：${num(density.days)} 工日 ÷ ${density.calendarDays} 个日历天 = ${densityNum(density.perDay)} 工日/天。整条蓝色越深、底部刻纹越密，平均投入越高；底部刻纹仅作疏密示意，不代表实际逐日投入。`:'日期、数量或单位折算依据不足，无法计算平均密度。';
     const name=projects.find(p=>p.id===entry.project_id)?.name||'项目待补',data={entry,name,density,densityText,number:numbers.get(entry.id),included:included.has(entry.id),highlighted:highlightedId===entry.id||selectedId===entry.id,onSelect,onHighlight:setHighlightedId};
-    nodes.push({id:`label-${entry.id}`,type:'label',position:{x:16,y:top+i*rowHeight},data,style:{width:left-26,height:58},selectable:false,focusable:false});
-    nodes.push({id:`claim-${entry.id}`,type:'claim',position:{x:x(day(entry.start)),y:top+i*rowHeight+5},data,style:{width:Math.max(3,(day(entry.end)-day(entry.start)+1)/span*timeWidth),height:42},selectable:false,focusable:false});
+    nodes.push({id:`label-${entry.id}`,type:'label',position:{x:16,y:top+i*rowHeight+(rowHeight-70)/2},data,style:{width:left-26,height:58},selectable:false,focusable:false});
+    nodes.push({id:`claim-${entry.id}`,type:'claim',position:{x:x(day(entry.start)),y:top+i*rowHeight+(rowHeight-70)/2+5},data,style:{width:Math.max(3,(day(entry.end)-day(entry.start)+1)/span*timeWidth),height:42},selectable:false,focusable:false});
   });
-  shown.forEach((w,i)=>nodes.push({id:`range-${key(w)}`,type:'range',position:{x:0,y:rangeTop+i*rangeRowHeight},data:{window:w,current:isCurrent(w),onSelect:selectScope,left:x(day(w.start)),width:(day(w.end)-day(w.start)+1)/span*timeWidth},style:{width:resultX-20,height:rangeRowHeight},selectable:false,focusable:false}));
+  shown.forEach((w,i)=>nodes.push({id:`range-${key(w)}`,type:'range',position:{x:0,y:rangeTop+i*rangeRowHeight+(rangeRowHeight-48)/2},data:{window:w,current:isCurrent(w),onSelect:selectScope,left:x(day(w.start)),width:(day(w.end)-day(w.start)+1)/span*timeWidth},style:{width:resultX-20,height:48},selectable:false,focusable:false}));
   if(range)nodes.push({id:'calculation',type:'result',position:{x:resultX,y:24},data:{scope,entries,projects,rules,numbers,onSelect,onRisk,onHighlight:setHighlightedId,highlightedId,onTotal:highlightTotal,onHeight:setResultHeight},style:{width:resultWidth},selectable:false,focusable:false});
   // Known dimensions keep controlled nodes visible while hover data changes.
   nodes.forEach(node=>{node.initialWidth=node.style.width;node.initialHeight=node.style.height||resultHeight;});
