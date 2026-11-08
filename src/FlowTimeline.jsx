@@ -80,7 +80,7 @@ export default function FlowTimeline(props){
   const [availableHeight,setAvailableHeight]=useState(0),[toolbarHeight,setToolbarHeight]=useState(52);
   useEffect(()=>{const observer=new ResizeObserver(([e])=>setWidth(e.contentRect.width));if(hostRef.current)observer.observe(hostRef.current);return()=>observer.disconnect();},[]);
   useEffect(()=>{
-    const workspace=hostRef.current.closest('.person-scroll'),toolbar=hostRef.current.previousElementSibling;
+    const workspace=hostRef.current.closest('.person-scroll'),toolbar=hostRef.current.closest('.flow-timeline').querySelector('.chart-toolbar');
     const observer=new ResizeObserver(()=>{setAvailableHeight(workspace.clientHeight);setToolbarHeight(toolbar.offsetHeight);});
     observer.observe(workspace);observer.observe(toolbar);
     return()=>observer.disconnect();
@@ -102,8 +102,8 @@ export default function FlowTimeline(props){
   const naturalDiagramHeight=top+complete.length*70-8+20+30+shown.length*48+foldSpace+48;
   const naturalHeight=Math.max(460,naturalDiagramHeight,24+resultHeight+18);
   const detailCount=detailLayout?.count??entries.length,detailRowHeight=detailLayout?.rowHeight??44,detailHeader=detailLayout?.headerHeight??34;
-  const spare=Math.max(0,availableHeight-toolbarHeight-12-detailHeader-detailCount*detailRowHeight-Math.ceil(naturalHeight*baseZoom));
-  const tableRowHeight=detailRowHeight+Math.min(20,Math.floor(spare*.28/Math.max(1,detailCount)));
+  const spare=detailLayout?.fixed?Math.max(0,availableHeight*.65-toolbarHeight-Math.ceil(naturalHeight*baseZoom)):Math.max(0,availableHeight-toolbarHeight-12-detailHeader-detailCount*detailRowHeight-Math.ceil(naturalHeight*baseZoom));
+  const tableRowHeight=detailRowHeight+(detailLayout?.fixed?0:Math.min(20,Math.floor(spare*.28/Math.max(1,detailCount))));
   const diagramShare=(spare-detailCount*(tableRowHeight-detailRowHeight))/baseZoom+Math.max(0,naturalHeight-naturalDiagramHeight);
   const rowShare=diagramShare/Math.max(1,complete.length*1.6+shown.length);
   const rowHeight=70+Math.min(62,rowShare*1.6),rangeRowHeight=48+Math.min(28,rowShare);
@@ -139,7 +139,7 @@ export default function FlowTimeline(props){
       {walking?<div className="join walk-controls"><span className="badge badge-soft badge-primary walk-step">{walkIndex+1} / {walkCount}</span><button className="btn btn-sm join-item" aria-label="演示上一步" disabled={walkIndex<=0} onClick={()=>stepWalk(-1)}><ArrowLeft size={15}/></button><button className="btn btn-sm btn-primary join-item" aria-label="演示下一步" disabled={walkIndex>=walkCount-1} onClick={()=>stepWalk(1)}>下一步<ArrowRight size={15}/></button><button className="btn btn-ghost btn-sm" aria-label="从第一步重新演示" onClick={startWalk}>重来</button><button className="btn btn-ghost btn-sm" aria-label="退出逐步演示" onClick={exitWalk}>退出</button></div>:<button className="btn btn-soft btn-primary btn-sm" disabled={!walkCount} onClick={startWalk}><Play size={14}/>逐步演示</button>}
       <button className="btn btn-ghost btn-sm" aria-label="适合窗口" onClick={reset}><ArrowsOutSimple size={17}/><span>适合窗口</span></button><button className="btn btn-ghost btn-square btn-sm" aria-label="查看轨迹图说明" onClick={()=>onOverlap(null)}><Info size={17}/></button>
     </div></div>
-    <div className="flow-host" ref={hostRef} style={{height:Math.ceil(height*baseZoom)}}>
+    <div className="flow-viewport-scroll"><div className="flow-host" ref={hostRef} style={{height:Math.ceil(height*baseZoom)}}>
     {!complete.length?<div className="empty"><h3>补充投入日期后显示轨迹</h3><p>缺少日期的申报仍保留在下方记录中。</p></div>:<ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} nodesDraggable={false} nodesConnectable={false} elementsSelectable={false} deleteKeyCode={null} panOnDrag={zoom>baseZoom+.001} panActivationKeyCode={null} panOnScroll={false} translateExtent={[[0,0],[totalWidth,height]]} zoomOnScroll={false} zoomOnPinch zoomOnDoubleClick={false} minZoom={baseZoom} maxZoom={1.8} defaultViewport={{x:0,y:0,zoom:baseZoom}} onInit={i=>{instanceRef.current=i;i.setViewport({x:0,y:0,zoom:baseZoom});}} onMove={(_,v)=>setZoom(v.zoom)} onMoveEnd={(_,v)=>{if(v.zoom<=baseZoom+.001&&(Math.abs(v.x)>.01||Math.abs(v.y)>.01))instanceRef.current?.setViewport({x:0,y:0,zoom:baseZoom});}} preventScrolling={false} ariaLabelConfig={{'controls.zoomIn.ariaLabel':'放大画布','controls.zoomOut.ariaLabel':'缩小画布','controls.fitView.ariaLabel':'适应全部节点'}} aria-label="可缩放的工时核查画布">
       <Controls position="bottom-left" showInteractive={false} fitViewOptions={{padding:.04,maxZoom:baseZoom}} aria-label="画布缩放控制"/>
       <ViewportPortal>
@@ -153,6 +153,6 @@ export default function FlowTimeline(props){
       </ViewportPortal>
     </ReactFlow>}
     {complete.length>0&&<span className="flow-zoom-value" aria-live="polite">{Math.round(zoom*100)}%</span>}
-    </div>
+    </div></div>
   </section>;
 }

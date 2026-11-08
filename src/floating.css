@@ -70,6 +70,18 @@
 .schedule-risk-table td { padding:8px 12px; vertical-align:middle; }
 .schedule-risk-table tbody tr { cursor:pointer; }
 .schedule-risk-table tbody tr:focus-visible { outline:2px solid var(--accent); outline-offset:-2px; }
+.schedule-risk-table tbody tr.selected-row td { background:var(--tint); box-shadow:inset 0 1px color-mix(in srgb,var(--accent) 25%,transparent),inset 0 -1px color-mix(in srgb,var(--accent) 25%,transparent); }
+.risk-row-check { display:inline-flex; align-items:center; gap:4px; margin-left:auto; color:var(--accent); font-size:12px; }
+.flow-viewport-scroll { min-width:0; }
+.person-scroll.risk-mode { overflow:hidden; }
+.risk-mode>.flow-timeline { flex:0 0 65%; min-height:0; display:flex; flex-direction:column; }
+.risk-mode .chart-toolbar { flex-shrink:0; }
+.risk-mode .flow-viewport-scroll { flex:1; min-height:0; overflow:auto; overscroll-behavior:contain; scrollbar-width:thin; border-radius:var(--radius-box); }
+.risk-mode>.records-panel { flex:1; min-height:0; }
+.risk-mode .records-tabs { flex-shrink:0; }
+.risk-mode #records-risks:not([hidden]) { display:flex; flex-direction:column; flex:1; min-height:0; }
+.risk-mode #records-risks>.table-scroll { flex:1; min-height:0; overflow:auto; overscroll-behavior:contain; scrollbar-width:thin; overflow-anchor:none; }
+.risk-mode .schedule-risk-table thead { position:sticky; top:0; z-index:2; background:var(--soft); }
 .schedule-risk-heading { display:flex; align-items:center; flex-wrap:wrap; gap:7px; font-size:12px; }
 .schedule-risk-message { margin-top:4px; font-size:12px; line-height:1.6; color:var(--muted); overflow-wrap:anywhere; }
 .schedule-risk-period { font-size:12px; color:var(--muted); line-height:1.6; }

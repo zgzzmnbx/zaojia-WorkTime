@@ -1,21 +1,23 @@
 import React from 'react';
+import { CheckCircle } from '@phosphor-icons/react';
 import { entryNumbers } from './timelineRisk.js';
 
 const num = value => Number(value).toLocaleString('zh-CN', value > 0 && value < .01 ? {maximumSignificantDigits: 2} : {maximumFractionDigits: 2});
 
 export default function ScheduleRiskList({items, result, projects, scope, selectedRiskId, onSelect}) {
   const numbers = entryNumbers(result.entries);
+  const isSelected = item => selectedRiskId ? selectedRiskId === item.id : item.kind === 'window' && item.start === scope?.start && item.end === scope?.end;
   if (!items.length) return <div className="schedule-risk-empty" role="status">当前人员未检出工期预警或待核事项</div>;
   return <div className="table-scroll"><table className="table table-sm schedule-risk-table" aria-label="当前人员全部工期风险">
     <thead><tr><th>风险 / 依据</th><th>核查时段</th><th>涉及申报</th></tr></thead>
-    <tbody>{items.map(item => <tr key={item.id} data-risk-id={item.id} className={(selectedRiskId ? selectedRiskId === item.id : item.kind === 'window' && item.start === scope?.start && item.end === scope?.end) ? 'selected-row' : ''}
+    <tbody>{items.map(item => <tr key={item.id} data-risk-id={item.id} className={isSelected(item) ? 'selected-row' : ''} aria-selected={isSelected(item)}
       tabIndex={0} aria-label={`查看${item.category}风险：${item.label}，${item.start || '日期待补'}至${item.end || '日期待补'}`}
       onClick={event => { event.currentTarget.focus({preventScroll:true}); onSelect(item); }}
       onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onSelect(item); } }}>
       <td>
         <div className="schedule-risk-heading">
           <span className={`badge badge-sm flow-risk rank-${item.kind === 'window' ? item.rank : item.level === 'warning' ? 2 : 'pending'}`}>{item.label}</span>
-          <span>{item.category}</span>
+          <span>{item.category}</span>{isSelected(item)&&<span className="risk-row-check"><CheckCircle size={16} weight="fill" aria-hidden="true"/><span>已选</span></span>}
         </div>
         <p className="schedule-risk-message">{item.kind === 'window'
           ? `合计 ${num(item.window.demand)} 工日 · ${item.comparison.boundary} ${num(item.comparison.threshold)} 工日 · 超出 ${num(item.comparison.excess)} 工日`
