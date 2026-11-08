@@ -4,7 +4,7 @@
 
 **按人员查看跨项目投入，让每一项累计都有来源。**
 
-![Version](https://img.shields.io/badge/version-0.5.2-228be6)
+![Version](https://img.shields.io/badge/version-0.6.0-228be6)
 ![Rules](https://img.shields.io/badge/rules-0.1.0%20%7C%20simulation-d97706)
 ![React](https://img.shields.io/badge/React-19-149eca?logo=react&logoColor=white)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-3776ab?logo=python&logoColor=white)
@@ -43,6 +43,7 @@
 | 实施期检查 | 核对人员投入起止日期、项目实施期及来源，提示期外投入和缺失依据 |
 | 职称与计费检查 | 核对职称证明、有效期、计费等级、单价、单位及合同依据 |
 | 平均投入密度 | 整条蓝色越深、底部刻纹越密，整段平均投入越高；显示申报工日 ÷ 日历天数，不代表实际逐日投入 |
+| 全部工期风险 | 明细区切换“风险”，查看当前人员全部累计容量预警、实施期异常与待补/待核事项，定位对应时段或查看申报依据 |
 | 可追溯的工时图 | 点击范围切换累计，悬停或键盘聚焦关联来源；支持逐步演示、缩放与适配 |
 | 台账维护 | 新增人员、项目及工时，按姓名、单位或工号搜索；同名人员按内部 ID 区分 |
 | 更正留痕 | 保存修订与只读历史快照，多页面写入使用版本冲突检测 |

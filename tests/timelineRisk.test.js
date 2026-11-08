@@ -1,7 +1,32 @@
 import {execFileSync} from 'node:child_process';
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { scheduleRisks } from '../src/scheduleRisks.js';
 import { entryDensity, entryNumbers, entryRisk, riskSegments, personRisk, riskExplanation, capacityExplanation, capacityScale, windowContributions, overlapPeriods, overlapSlice, exactOverlapWindow, orderedWindows, capacityComparison, overlapCapacity } from '../src/timelineRisk.js';
+
+test('工期风险保留全部独立预警时段，只关联完整计入来源，不复制最紧时段摘要',()=>{
+  const a={start:'2026-03-02',end:'2026-04-17',rank:3,entry_ids:['a','b'],c0:30,c1:36,c2:40,demand:50};
+  const b={...a,start:'2026-03-16',entry_ids:['b'],demand:45};
+  const result={windows:[b,{...a,rank:0,entry_ids:['wide']},a],findings:[{category:'跨项目',level:'warning',message:'最紧时段为高负荷核查，仅作模拟筛查'}],rule_snapshot:{tolerance:1}};
+  const rows=scheduleRisks(result);
+  assert.deepEqual(rows.map(r=>r.entryIds),[['a','b'],['b']]);
+  assert.deepEqual(rows.map(r=>r.comparison.excess),[9,4]);
+  assert.equal(rows.length,2);
+});
+test('工期风险收集单条与人员级事项，待核不冒充超量，保留不同申报的同类问题',()=>{
+  const finding={category:'实施期',level:'pending',message:'实际投入日期待补',entry_id:'a'};
+  const result={entries:[{id:'a',start:null,end:null}],windows:[],findings:[finding,{...finding},{...finding,entry_id:'b'},{category:'跨项目',level:'pending',message:'日历待维护'},{category:'职称计费',level:'warning',message:'单价不一致'}]};
+  const rows=scheduleRisks(result);
+  assert.equal(rows.length,3);
+  assert.ok(rows.every(r=>r.level==='pending'&&!r.window));
+  assert.deepEqual(rows.map(r=>r.entryIds),[['a'],['b'],[]]);
+  assert.equal(rows[0].start,null);
+});
+test('无工期异常与未提供结果分别保持空集；缺窗口时不丢失已有预警摘要',()=>{
+  assert.deepEqual(scheduleRisks(null),[]);
+  assert.deepEqual(scheduleRisks({windows:[],findings:[]}),[]);
+  assert.equal(scheduleRisks({findings:[{category:'跨项目',level:'warning',message:'最紧时段为重点核查'}]}).length,1);
+});
 
 test('平均密度包含首尾日，不采用认定量或误作工作日密度',()=>{
   const entry={id:'a',start:'2026-03-02',end:'2026-03-27',unit:'工日',amount:18,recognized_amount:12};

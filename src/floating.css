@@ -56,6 +56,27 @@
 .person-scroll>.flow-timeline { flex-shrink:0; }
 .person-workspace>.person-scroll>.timeline-entries { flex:0 0 auto; margin-top:0; }
 .person-workspace>.person-scroll>.timeline-entries .table td { height:var(--entry-row-height,44px); }
+.records-panel { flex:0 0 auto; min-width:0; margin-inline:6px; border:1px solid var(--line); border-radius:var(--radius-box); box-shadow:var(--surface-shadow); overflow:hidden; }
+.records-tabs.tabs { min-height:38px; height:38px; padding-inline:8px; border-bottom:1px solid var(--line); gap:4px; }
+.records-tabs .tab { height:37px; font-size:13px; gap:7px; padding-inline:12px; color:var(--muted); }
+.records-tabs .tab.tab-active { color:var(--accent); --tab-border-color:var(--accent); }
+.records-count { font-size:12px; font-variant-numeric:tabular-nums; }
+.records-panel .table td { height:var(--entry-row-height,44px); }
+.records-panel .table th { height:32px; padding-block:5px; }
+.records-panel .table-scroll { border:0; margin:0; border-radius:0; }
+.schedule-risk-table { table-layout:fixed; }
+.schedule-risk-table th:nth-child(2) { width:130px; }
+.schedule-risk-table th:nth-child(3) { width:30%; }
+.schedule-risk-table th:last-child { width:86px; }
+.schedule-risk-table td { padding:8px 12px; vertical-align:middle; }
+.schedule-risk-heading { display:flex; align-items:center; flex-wrap:wrap; gap:7px; font-size:12px; }
+.schedule-risk-message { margin-top:4px; font-size:12px; line-height:1.6; color:var(--muted); overflow-wrap:anywhere; }
+.schedule-risk-period { font-size:12px; color:var(--muted); line-height:1.6; }
+.schedule-risk-sources { display:flex; flex-wrap:wrap; gap:3px; }
+.schedule-risk-sources .btn { min-height:25px; height:auto; padding:2px 4px; text-align:left; justify-content:flex-start; white-space:normal; font-size:12px; }
+.schedule-risk-sources .entry-index { flex-shrink:0; color:var(--accent); background:var(--tint); border-radius:4px; padding:0 4px; font-size:12px; }
+.schedule-risk-table td:last-child .btn { padding-inline:4px; font-size:12px; }
+.schedule-risk-empty { min-height:64px; padding:20px; font-size:13px; color:var(--muted); }
 .evidence { margin-left:0; border:1px solid var(--line); border-radius:var(--radius-box); overflow:hidden; box-shadow:var(--surface-shadow); }
 .page-scroll>.table-scroll,.page-scroll>.table { border-radius:var(--radius-box); box-shadow:var(--surface-shadow); }
 .app-modal .modal-box { border-radius:var(--radius-box); }
@@ -75,5 +96,7 @@
   .app-header .search { width:180px; }
   .flow-timeline { margin-inline:4px; }
   .person-workspace>.person-scroll>.table-scroll { margin-inline:4px; }
+  .records-panel { margin-inline:4px; }
+  .schedule-risk-table th:nth-child(2) { width:104px; }
 }
 @media print { .app-shell { padding:0; } }

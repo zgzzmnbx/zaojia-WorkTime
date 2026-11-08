@@ -8,6 +8,8 @@ import './workbench.css';
 import './fonts.css';
 import './floating.css';
 import ThemePicker from './ThemePicker.jsx';
+import ScheduleRiskList from './ScheduleRiskList.jsx';
+import { scheduleRisks } from './scheduleRisks.js';
 import WindowContributions from './WindowContributions.jsx';
 import { personRisk, riskExplanation, capacityExplanation, overlapPeriods, exactOverlapWindow, orderedWindows } from './timelineRisk.js';
 
@@ -89,6 +91,7 @@ function App(){
   const [dark,setDark]=useState(localStorage.getItem('hours-theme')==='dark');
   const [loading,setLoading]=useState(false);
   const [showEvidence,setShowEvidence]=useState(false);
+  const [recordsTab,setRecordsTab]=useState('projects');
   const [scopeKey,setScopeKey]=useState('');
   const [overlapKey,setOverlapKey]=useState('');
   const [walking,setWalking]=useState(false);
@@ -102,6 +105,7 @@ function App(){
   useEffect(()=>{if(toast){const t=setTimeout(()=>setToast(''),3500);return()=>clearTimeout(t);}},[toast]);
   const state=data?.state;
   const result=data?.results.find(r=>r.person.id===personId);
+  const risks=scheduleRisks(result);
   const scope=result?.windows.find(w=>`${w.start}/${w.end}`===scopeKey)||result?.worst;
   const overlaps=result?overlapPeriods(result.entries):[];
   const selectedOverlap=overlaps.find(o=>`${o.start}/${o.end}`===overlapKey);
@@ -146,8 +150,15 @@ function App(){
     {!data?<div className="empty"><span className="loading loading-spinner"/>正在读取台账</div>:<>
       <h1 className="sr-only">{nav.find(n=>n[0]===view)?.[1]}</h1>
       {view==='timeline'&&<div className="timeline-workspace"><aside className="people-panel"><div className="people-filter"><Icon as={Funnel} size={16}/><select aria-label="人员筛选" value={filter} onChange={e=>setFilter(e.target.value)}><option value="all">全部人员</option><option value="warning">有核查事项</option><option value="pending">待补依据</option></select><button className="btn btn-ghost icon" title="新增人员" aria-label="新增人员" onClick={()=>edit('people')}><Icon as={Plus} size={16}/></button></div><div className="people-list">{list.map(r=><button className={'person-card card '+(personId===r.person.id?'active':'')} key={r.person.id} onClick={()=>choosePerson(r.person.id)}><div className="person-name"><span className="avatar-letter">{r.person.name.slice(-2)}</span><strong>{r.person.name}</strong><span className={'risk-dot rank-'+personRisk(r)}/></div><div className="person-company">{r.person.company} · {r.person.code}</div><div className="person-bottom"><span>{new Set(r.entries.map(e=>e.project_id)).size} 项目</span><span className={`badge badge-sm person-risk-text rank-${personRisk(r)}`}>{personSummary(r)}</span></div>{r.pending_count>0&&<small className="pending-label">{r.pending_count} 项待补依据</small>}</button>)}{!list.length&&<div className="empty compact">暂无匹配人员</div>}</div></aside>
-      {result?<><div className="person-workspace"><div className="person-scroll"><Timeline key={personId} entries={result.entries} projects={state.projects} windows={result.windows} scope={scope} selectScope={selectScope} overlaps={overlaps} selectedOverlap={selectedOverlap} selectOverlap={selectOverlap} walking={walking} walkIndex={walkIndex} walkCount={walkWindows.length} startWalk={startWalk} stepWalk={stepWalk} exitWalk={exitWalk} rules={result.rule_snapshot} calendars={state.calendars} onRisk={value=>setModal({type:'risk-window',value})} selectedId={entryId} onSelect={openEntry} onOverlap={value=>setModal(value?{type:'overlap',value}:{type:'chart-help'})} heading={<div className="person-inline"><h2 title={`${result.person.company} / ${result.person.code} / ${result.person.title||'职称待补'}`}>{result.person.name}</h2><button ref={evidenceTrigger} className="btn btn-ghost btn-sm summary-toggle" aria-label="查看完整核验依据" aria-expanded={showEvidence} onClick={()=>{setEntryId('');setShowEvidence(v=>!v);}}>{selectedOverlap?badge(exactOverlapWindow(selectedOverlap,result.windows)?.label||'重叠段待核'):badge(scope?.label||'无法判断','rank-'+(scope?.rank??'none'))}<Icon as={Info} size={16}/></button></div>}/>
-        {entryTable(result.entries,true)}
+      {result?<><div className="person-workspace"><div className="person-scroll"><Timeline key={personId} detailLayout={{count:recordsTab==='risks'?Math.max(1,risks.length):result.entries.length,rowHeight:recordsTab==='risks'?64:44,headerHeight:72}} entries={result.entries} projects={state.projects} windows={result.windows} scope={scope} selectScope={selectScope} overlaps={overlaps} selectedOverlap={selectedOverlap} selectOverlap={selectOverlap} walking={walking} walkIndex={walkIndex} walkCount={walkWindows.length} startWalk={startWalk} stepWalk={stepWalk} exitWalk={exitWalk} rules={result.rule_snapshot} calendars={state.calendars} onRisk={value=>setModal({type:'risk-window',value})} selectedId={entryId} onSelect={openEntry} onOverlap={value=>setModal(value?{type:'overlap',value}:{type:'chart-help'})} heading={<div className="person-inline"><h2 title={`${result.person.company} / ${result.person.code} / ${result.person.title||'职称待补'}`}>{result.person.name}</h2><button ref={evidenceTrigger} className="btn btn-ghost btn-sm summary-toggle" aria-label="查看完整核验依据" aria-expanded={showEvidence} onClick={()=>{setEntryId('');setShowEvidence(v=>!v);}}>{selectedOverlap?badge(exactOverlapWindow(selectedOverlap,result.windows)?.label||'重叠段待核'):badge(scope?.label||'无法判断','rank-'+(scope?.rank??'none'))}<Icon as={Info} size={16}/></button></div>}/>
+        <section className="records-panel card bg-base-100">
+          <div className="tabs tabs-border records-tabs" role="tablist" aria-label="人员明细" onKeyDown={e=>{if(['ArrowLeft','ArrowRight','Home','End'].includes(e.key)){e.preventDefault();const next=e.key==='Home'?'projects':e.key==='End'?'risks':recordsTab==='projects'?'risks':'projects';setRecordsTab(next);document.getElementById(`records-tab-${next}`)?.focus();}}}>
+            <button className={`tab ${recordsTab==='projects'?'tab-active':''}`} id="records-tab-projects" role="tab" aria-selected={recordsTab==='projects'} aria-controls="records-projects" tabIndex={recordsTab==='projects'?0:-1} onClick={()=>setRecordsTab('projects')}>项目<span className="records-count">{result.entries.length}</span></button>
+            <button className={`tab ${recordsTab==='risks'?'tab-active':''}`} id="records-tab-risks" role="tab" aria-selected={recordsTab==='risks'} aria-controls="records-risks" tabIndex={recordsTab==='risks'?0:-1} onClick={()=>setRecordsTab('risks')} title="当前人员全部工期预警与待补事项；各累计时段独立核查，不能相加">风险<span className="records-count">{risks.length}</span></button>
+          </div>
+          <div role="tabpanel" id="records-projects" aria-labelledby="records-tab-projects" hidden={recordsTab!=='projects'}>{entryTable(result.entries,true)}</div>
+          <div role="tabpanel" id="records-risks" aria-labelledby="records-tab-risks" hidden={recordsTab!=='risks'}><ScheduleRiskList items={risks} result={result} scope={scope} projects={state.projects} onLocate={w=>{selectScope(w);requestAnimationFrame(()=>document.querySelector('.person-scroll')?.scrollTo({top:0,behavior:'smooth'}));}} onEntry={openEntry} onEvidence={()=>{setEntryId('');setShowEvidence(true);}}/></div>
+        </section>
 </div>
       </div>{showEvidence&&<Detail result={result} scope={scope} overlap={selectedOverlap} entryId={entryId} projects={state.projects} onEdit={e=>edit('entries',e)} onPrint={print} onClose={closeEvidence}/>}</>:<div className="empty onboarding"><Icon as={ChartBarHorizontal} size={48}/><h2>从第一个项目的人员投入开始</h2><p>建立人员与项目，再逐条录入工时，形成跨项目轨迹。</p><div><button className="btn" onClick={()=>edit('projects')}>新增项目</button><button className="btn btn-primary" onClick={()=>edit('people')}>新增人员</button></div><a className="text-link" href="/?demo=1">先看模拟案例</a></div>}</div>}
       {view==='people'&&<div className="page-scroll"><table className="table table-sm"><thead><tr><th>姓名</th><th>单位 / 工号</th><th>职称 / 有效期</th><th>三类检查</th><th/></tr></thead><tbody>{list.map(r=><tr key={r.person.id}><td><button className="text-link" onClick={()=>{choosePerson(r.person.id);setView('timeline');}}>{r.person.name}</button></td><td>{r.person.company}<small>{r.person.code}</small></td><td>{r.person.title||'待补'}<small>{r.person.title_from||'—'} 至 {r.person.title_to||'—'}</small></td><td>{Object.entries(r.checks).map(([k,v])=><small key={k}>{k}：{v}</small>)}</td><td><button className="btn btn-ghost btn-sm" onClick={()=>edit('people',r.person)}>编辑</button></td></tr>)}</tbody></table></div>}

@@ -73,7 +73,7 @@ function ResultNode({id,data:d}){
 const nodeTypes={claim:ClaimNode,label:LabelNode,range:RangeNode,result:ResultNode};
 
 export default function FlowTimeline(props){
-  const {entries,projects,windows,scope,selectScope,walking,walkIndex,walkCount,startWalk,stepWalk,exitWalk,rules,onRisk,selectedId,onSelect,onOverlap,heading}=props;
+  const {entries,projects,windows,scope,selectScope,walking,walkIndex,walkCount,startWalk,stepWalk,exitWalk,rules,onRisk,selectedId,onSelect,onOverlap,heading,detailLayout}=props;
   const hostRef=useRef(null),instanceRef=useRef(null);
   const [width,setWidth]=useState(1000),[showAll,setShowAll]=useState(false),[highlightedId,setHighlightedId]=useState(null);
   const [zoom,setZoom]=useState(1),[resultHeight,setResultHeight]=useState(530);
@@ -101,9 +101,10 @@ export default function FlowTimeline(props){
   const foldSpace=hidden.length&&!walking?34:10;
   const naturalDiagramHeight=top+complete.length*70-8+20+30+shown.length*48+foldSpace+48;
   const naturalHeight=Math.max(460,naturalDiagramHeight,24+resultHeight+18);
-  const spare=Math.max(0,availableHeight-toolbarHeight-12-34-entries.length*44-Math.ceil(naturalHeight*baseZoom));
-  const tableRowHeight=44+Math.min(20,Math.floor(spare*.28/Math.max(1,entries.length)));
-  const diagramShare=(spare-entries.length*(tableRowHeight-44))/baseZoom+Math.max(0,naturalHeight-naturalDiagramHeight);
+  const detailCount=detailLayout?.count??entries.length,detailRowHeight=detailLayout?.rowHeight??44,detailHeader=detailLayout?.headerHeight??34;
+  const spare=Math.max(0,availableHeight-toolbarHeight-12-detailHeader-detailCount*detailRowHeight-Math.ceil(naturalHeight*baseZoom));
+  const tableRowHeight=detailRowHeight+Math.min(20,Math.floor(spare*.28/Math.max(1,detailCount)));
+  const diagramShare=(spare-detailCount*(tableRowHeight-detailRowHeight))/baseZoom+Math.max(0,naturalHeight-naturalDiagramHeight);
   const rowShare=diagramShare/Math.max(1,complete.length*1.6+shown.length);
   const rowHeight=70+Math.min(62,rowShare*1.6),rangeRowHeight=48+Math.min(28,rowShare);
   useEffect(()=>{
