@@ -11,6 +11,9 @@
 
 ## 项目经验 / 注意事项
 
+- 麒麟 A 系统 Python 为 3.7，不能直接运行本项目；内网部署使用 `/opt/expert-hours/runtime/bin/python3.12` 独立基础运行时，后端仅监听 loopback，由独立 Caddy 监听 `10.54.9.47:8791` 并限制来源 `10.54.9.0/24`。程序 release 与 `/var/lib/expert-hours/data` 分离；升级不得打包或覆盖本机/服务器真实台账。部署入口及回滚以 `00-docs/麒麟A内网部署-【codex】.md` 为准。
+- 普通内网HTTP不是安全上下文，`crypto.randomUUID()`可能不可用；新增记录统一用 `src/recordId.js`，回退到`crypto.getRandomValues()`生成UUID v4。发布到真实内网HTTP后必须实测新增保存，localhost检查不能代替此项。
+
 - 主页面只保留一条应用顶栏，禁止再叠模块标题、说明横幅、人员摘要标题与检查摘要。搜索、录入、导出合到顶栏；说明用可点击info入口，依据默认收起。验收须看1366×768首屏实际能显示多少泳道和申报，不能靠缩小业务字体腾空间。
 
 - Python sqlite3连接的 `with connection` 只管理事务，不自动关闭连接。Windows上必须显式close，否则备份、测试清理可能被文件锁阻止；已用contextmanager封装并实测。

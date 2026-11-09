@@ -15,6 +15,7 @@ import WindowContributions from './WindowContributions.jsx';
 import { personRisk, riskExplanation, capacityExplanation, overlapPeriods, exactOverlapWindow, orderedWindows } from './timelineRisk.js';
 
 import { version as VERSION } from '../package.json';
+import { recordId } from './recordId.js';
 const demo=new URLSearchParams(location.search).get('demo')==='1';
 const API=demo?'/api/demo':'/api';
 const DAY=86400000, dn=s=>Date.parse(s+'T00:00:00Z')/DAY;
@@ -138,7 +139,7 @@ function App(){
   const projectFields=[['code','项目编号','text',null,true],['name','项目名称','text',null,true],['build_start','建设开始','date'],['build_end','建设结束','date'],['impl_start','实施开始','date'],['impl_end','实施结束','date'],['impl_source','实施期确认依据','textarea']];
   const personFields=[['name','姓名','text',null,true],['code','工号','text',null,true],['company','所属单位','text',null,true],['title','职称'],['title_from','职称有效开始','date'],['title_to','职称有效结束','date'],['title_source','职称证明依据','textarea']];
   function edit(kind,value){
-    const fresh=!value;let fields,title,extra;value=value||{id:crypto.randomUUID()};
+    const fresh=!value;let fields,title,extra;value=value||{id:recordId()};
     if(kind==='projects'){fields=projectFields;title=fresh?'新增项目':'编辑项目';}
     if(kind==='people'){fields=personFields;title=fresh?'新增人员':'编辑人员';}
     if(kind==='entries'){

@@ -1,13 +1,13 @@
 {
   "name": "expert-hours-review",
-  "version": "0.6.2",
+  "version": "0.7.0",
   "private": true,
   "type": "module",
   "scripts": {
     "build": "vite build",
     "test": "python -m unittest discover -s tests -v",
     "start": "python server.py",
-    "test:ui-logic": "node --test tests/timelineRisk.test.js"
+    "test:ui-logic": "node --test tests/timelineRisk.test.js tests/recordId.test.js"
   },
   "dependencies": {
     "@phosphor-icons/react": "2.1.10",

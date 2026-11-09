@@ -9,6 +9,7 @@ from engine import VERSION, empty_state, validate, analyze
 from sample_data import demo_state
 
 ROOT=Path(__file__).resolve().parent
+APP_VERSION=json.loads((ROOT/'package.json').read_text(encoding='utf-8'))['version']
 
 def stamp(): return datetime.now(timezone.utc).isoformat()
 def dumps(value): return json.dumps(value,ensure_ascii=False,allow_nan=False)
@@ -82,7 +83,7 @@ def handler_factory(stores):
         def do_GET(self):
             try:
                 store,path=self.route()
-                if path=='/api/health': return self.respond(200,dict(app='expert-hours-review',version=VERSION))
+                if path=='/api/health': return self.respond(200,dict(app='expert-hours-review',version=VERSION,app_version=APP_VERSION,rule_version=VERSION))
                 if path=='/api/state':
                     rev,state=store.read()
                     return self.respond(200,dict(revision=rev,state=state,results=analyze(state),history=store.history()))

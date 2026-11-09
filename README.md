@@ -4,7 +4,7 @@
 
 **按人员查看跨项目投入，让每一项累计都有来源。**
 
-![Version](https://img.shields.io/badge/version-0.6.2-228be6)
+![Version](https://img.shields.io/badge/version-0.7.0-228be6)
 ![Rules](https://img.shields.io/badge/rules-0.1.0%20%7C%20simulation-d97706)
 ![React](https://img.shields.io/badge/React-19-149eca?logo=react&logoColor=white)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-3776ab?logo=python&logoColor=white)
@@ -17,6 +17,8 @@
 面向专家及技术人员工时台账的本地核验工具，将同一人员在多个项目中的投入放到同一时间轴，分别检查**跨项目累计、项目实施期、职称与计费等级**。录入后直接核验，编辑保存后重新计算，并保留更正历史。
 
 > 当前提供模拟规则筛查。期间交叉、超过参考容量、合同计费差异分别表达；筛查结果不直接作为重复报工或结算审减结论。
+
+已部署到麒麟 A 内网：[实际台账](http://10.54.9.47:8791/) · [模拟案例](http://10.54.9.47:8791/?demo=1)。仅允许公司 `10.54.9.0/24` 网段访问，免登录共享台账；真实库初始为空，操作人采用手工留痕。[部署与备份说明](00-docs/麒麟A内网部署-【codex】.md)。
 
 ## 界面预览
 
@@ -88,7 +90,7 @@ python server.py
 python server.py --port 8792 --data-dir ./data-local
 ```
 
-服务当前仅监听 `127.0.0.1`。内网多机访问、账号权限和认证签字尚未交付。
+源码启动的后端仅监听 `127.0.0.1`。麒麟部署通过独立 Caddy 网关提供受限内网多机访问，账号权限和认证签字尚未交付。
 
 ## 使用流程
 
@@ -195,4 +197,4 @@ zaojia-WorkTime/
 - [首版验收记录（历史）](00-docs/验收记录-v0.1.0-【codex】.md)
 - [版本记录](CHANGELOG.md) · [历史归档](CHANGELOG-历史归档.md)
 
-界面与项目版本为 **v0.3.3**，规则与服务版本为 **v0.1.0**。真实项目对照、正式合同规则、内网多机部署、Excel/WPS 打开 CSV 及签字验收仍待验证。
+界面与项目版本为 **v0.7.0**，规则版本为 **v0.1.0**。麒麟内网部署详见部署说明；真实项目对照、正式合同规则、Excel/WPS 打开 CSV 及签字验收仍待验证。

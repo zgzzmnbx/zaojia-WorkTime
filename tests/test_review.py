@@ -183,6 +183,10 @@ class HttpTests(unittest.TestCase):
         with urllib.request.urlopen(self.base+'/api/demo/export') as r:
             self.assertTrue(r.read().startswith(b'\xef\xbb\xbf'))
         with urllib.request.urlopen(self.base+'/api/state') as r:self.assertEqual(json.load(r)['state']['people'],[])
+    def test_health_distinguishes_app_and_rules(self):
+        with urllib.request.urlopen(self.base+'/api/health') as r:data=json.load(r)
+        self.assertEqual(data['app_version'],json.loads((Path(__file__).resolve().parents[1]/'package.json').read_text(encoding='utf-8'))['version'])
+        self.assertEqual(data['rule_version'],data['version'])
     def test_cross_origin_post_blocked(self):
         req=urllib.request.Request(self.base+'/api/save',data=b'{}',headers={'Origin':'https://other.example','Content-Type':'application/json'})
         with self.assertRaises(urllib.error.HTTPError) as cm:urllib.request.urlopen(req)
