@@ -316,7 +316,7 @@ def main():
     stop = threading.Event()
     worker = threading.Thread(target=calendar_sync_loop, args=(stores, Conflict, stop), daemon=True)
     worker.start()
-    print(f'专家工时核验 v{VERSION}: http://127.0.0.1:{args.port}/',flush=True)
+    print(f'专家工时核验 v{APP_VERSION}（模拟规则 v{VERSION}） http://127.0.0.1:{args.port}/',flush=True)
     try:
         server.serve_forever()
     finally:
