@@ -1,0 +1,21 @@
+.calendar-manager .calendar-actions,.calendar-controls{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.calendar-controls label{display:flex;gap:8px;align-items:center;white-space:nowrap}
+.calendar-actions .field{flex:1;min-width:180px}
+.calendar-auto{display:flex;align-items:flex-start;gap:8px;margin:10px 0}
+.calendar-controls .select{min-width:80px}
+.calendar-source{overflow-wrap:anywhere;margin:10px 0}
+.calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.calendar-grid>strong{text-align:center;font-size:var(--dws-font-size-small);color:var(--muted);padding:6px}
+.calendar-grid>div{display:flex;justify-content:space-between;align-items:center;gap:4px;border:1px solid var(--line);border-radius:8px;padding:9px}
+.calendar-grid small{color:var(--muted)}
+.calendar-grid .calendar-rest{background:var(--base-200,var(--paper));color:var(--muted)}
+.calendar-grid .calendar-work{border-bottom:2px solid var(--accent)}
+.calendar-range{display:flex;gap:12px;flex-wrap:wrap;align-items:center;padding:16px 0}
+.calendar-range-result{flex:1;min-width:220px}
+.calendar-range-result p{margin:3px 0;font-size:var(--dws-font-size-small);color:var(--muted)}
+.calendar-import{border-top:1px solid var(--line);padding-top:12px;margin-top:12px}
+.calendar-package-years .checkline{display:flex;gap:8px;align-items:flex-start;margin:8px 0}
+.calendar-package-years details{font-size:var(--dws-font-size-small);max-width:60%}
+.calendar-package-years details summary{cursor:pointer}
+.calendar-package-years details p{overflow-wrap:anywhere}
+@media(max-width:600px){.calendar-grid>div{flex-direction:column;padding:6px 2px}.calendar-package-years .checkline{flex-wrap:wrap}}

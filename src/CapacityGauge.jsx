@@ -2,6 +2,7 @@ import React, {useEffect,useId,useRef,useState} from 'react';
 import {capacityScale} from './timelineRisk.js';
 
 const format=value=>Number(value).toLocaleString('zh-CN',{maximumFractionDigits:2});
+const referenceLabel=names=>names.map(name=>/参考$|上限$/.test(name)?name:`${name}参考`).join(' / ');
 
 export default function CapacityGauge({window,rules,label='整段累计',hideCaption=false,vertical=false,compact=false}) {
   const ref=useRef(null),[width,setWidth]=useState(600);
@@ -29,7 +30,7 @@ export default function CapacityGauge({window,rules,label='整段累计',hideCap
     const axis=68,top=compact?12:22,bottom=compact?174:260,y=value=>bottom-value/scale.max*(bottom-top);
     const refs=[...scale.markers].reverse().map(m=>({...m,y:y(m.value)}));
     refs.forEach((m,i)=>m.labelY=Math.max(top+6,m.y,i?refs[i-1].labelY+38:top+6));
-    for(let i=refs.length-1;i>=0;i--)refs[i].labelY=Math.min(refs[i].labelY,i<refs.length-1?refs[i+1].labelY-38:bottom-12);
+    for(let i=refs.length-1;i>=0;i--)refs[i].labelY=Math.min(refs[i].labelY,i<refs.length-1?refs[i+1].labelY-38:bottom-12-(refs[i].names.length-1)*12);
     const cy=y(scale.demand);
     return <figure ref={ref} className={`capacity-gauge capacity-vertical rank-${window.rank}`} aria-label={description}>
       {unknown&&<div className="capacity-pending">本段工时待补 · 超出量待核</div>}
@@ -40,11 +41,11 @@ export default function CapacityGauge({window,rules,label='整段累计',hideCap
         </g>
         <text className="capacity-zero" x={axis} y={bottom+17} textAnchor="middle">0</text>
         {refs.map((m,i)=><g className="capacity-reference" data-value={m.value} key={i}>
-          <title>{m.names.join(' / ')}参考：{format(m.value)}工日</title>
+          <title>{referenceLabel(m.names)}：{format(m.value)}工日</title>
           <line x1={axis-7} x2={axis+7} y1={m.y} y2={m.y}/>
           <path className="capacity-leader" d={`M ${axis+7} ${m.y} C ${axis+20} ${m.y}, ${axis+22} ${m.labelY}, ${axis+32} ${m.labelY}`}/>
-          <text x={axis+38} y={m.labelY-3}>{m.names.join(' / ')}</text>
-          <text className="capacity-reference-value" x={axis+38} y={m.labelY+13}>{format(m.value)}</text>
+          <text x={axis+38} y={m.labelY-3}>{m.names.map((name,index)=><tspan key={name} x={axis+38} dy={index?12:0}>{name}</tspan>)}</text>
+          <text className="capacity-reference-value" x={axis+38} y={m.labelY+13+(m.names.length-1)*12}>{format(m.value)}</text>
         </g>)}
         {!unknown&&<g className="capacity-current" data-value={scale.demand}>
           <title>{label} {format(scale.demand)}工日</title>
@@ -64,7 +65,7 @@ export default function CapacityGauge({window,rules,label='整段累计',hideCap
       {stops.slice(0,-1).map((start,i)=><rect key={i} className={`capacity-zone rank-${i}`} x={x(start)} y="42" width={Math.max(0,x(stops[i+1])-x(start))} height="7"/>)}
       <text className="capacity-zero" x={inset} y="65" textAnchor="middle">0</text>
       {labels.map((marker,i)=><g key={i} className="capacity-reference" data-value={marker.value}>
-        <title>{marker.names.join(' / ')}参考：{format(marker.value)}工日{scale.tolerance?`（原值${format(marker.raw)}＋容差${format(scale.tolerance)}）`:''}</title>
+        <title>{referenceLabel(marker.names)}：{format(marker.value)}工日{scale.tolerance?`（原值${format(marker.raw)}＋容差${format(scale.tolerance)}）`:''}</title>
         <line x1={x(marker.value)} x2={x(marker.value)} y1="37" y2="54"/>
         <path className="capacity-leader" d={`M ${x(marker.value)} 54 L ${marker.textX} 65`}/>
         <text x={marker.textX} y="80" textAnchor="middle">{marker.names.join(' / ')}</text>

@@ -27,8 +27,8 @@ def demo_state():
                  ('u12','p5','03-16','03-27',9),('u12','p6','04-13','04-24',6)])
     for i,(person,project,start,end,amount) in enumerate(rows,1):
         s['entries'].append(dict(id=f'e{i}',person_id=person,project_id=project,
-            start='2026-'+start if start else '',end='2026-'+end if end else '',amount=amount,
-            unit='人月' if person=='u6' else ('工时' if person=='u11' else '工日'),submitted_at='2026-05-06',
+            start='2026-'+start if start else '',end='2026-'+end if end else '',amount=None if person=='u6' else amount,
+            unit='工时' if person in ('u6','u11') else '工日',submitted_at='2026-05-06',
             grade='高级',price=1600,price_unit='工日',basis_title='高级工程师',allowed_grade='高级',
             basis_price=1600,basis_unit='工日',basis_source='模拟合同：高级工程师1600元/工日',
             basis_from='2026-01-01',basis_to='2026-12-31',duplicate='append',status='pending',

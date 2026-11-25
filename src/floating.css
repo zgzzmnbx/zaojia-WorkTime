@@ -114,3 +114,9 @@
   .schedule-risk-table th:nth-child(2) { width:104px; }
 }
 @media print { .app-shell { padding:0; } }
+
+/* Keep the active person readable above the chart without adding another row. */
+.flow-timeline .person-inline { gap:12px; }
+.flow-timeline .person-inline h2 { color:var(--ink); font-size:22px; font-weight:750; line-height:1.25; letter-spacing:0; }
+.flow-timeline .person-inline .summary-toggle { min-height:32px; height:32px; padding:0 6px; gap:8px; color:var(--ink); }
+.flow-timeline .person-inline .summary-toggle .tag.badge { min-height:28px; padding:4px 9px; font-size:13px; font-weight:650; border:1px solid color-mix(in srgb,var(--risk-ink) 24%,transparent); border-radius:6px; }
