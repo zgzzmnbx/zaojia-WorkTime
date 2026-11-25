@@ -1,5 +1,6 @@
 // Colors describe capacity screening windows, never observed daily workload.
-export const riskLabels = ['常规', '轻度', '重点', '高负荷'];
+import {unitLabel} from './units.js';
+export const riskLabels = ['低风险', '中风险', '高风险', '极高风险'];
 const amount = value => Number(value).toLocaleString('zh-CN', {maximumFractionDigits: Math.abs(value)>0&&Math.abs(value)<0.01?6:2});
 const dateLabel = value => {const [y,m,d]=value.split('-').map(Number);return `${y}年${m}月${d}日`;};
 
@@ -10,14 +11,40 @@ export function capacityComparison(window, rules = {}) {
   if(!window)return null;
   const rank=window.rank,base=[window.c0,window.c0,window.c1,window.c2][rank];
   const threshold=base+(rules.tolerance??0);
-  return {boundary:['常规参考','常规参考','加班参考','高负荷参考'][rank],threshold,excess:Math.max(0,window.demand-threshold),exceeded:rank>0};
+  return {boundary:['工作日参考','工作日参考','含加班上限','最高参考上限'][rank],threshold,excess:rank>0?Math.max(0,window.demand-threshold):0,exceeded:rank>0};
+}
+
+// Show the actual assumptions beside the numbers, rather than an unexplained grade.
+export function capacityStandards(window, rules = {}) {
+  if(!window || ![window.n,window.c0,window.c1,window.c2,window.demand].every(Number.isFinite))return null;
+  const tolerance=rules.tolerance??0;
+  const comparison=capacityComparison(window,rules);
+  const overtime=window.c1-window.c0;
+  const rows=[
+    {id:'workdays',label:`${amount(window.c0)} 个工作日`,basis:'每天按 1 工日',raw:window.c0},
+    {id:'overtime',label:'工作日＋模拟加班',basis:`${amount(window.c0)}＋${amount(overtime)} 工日`,raw:window.c1},
+    {id:'calendar',label:`${amount(window.n)} 个日历天`,basis:'含周末，每天按 1 工日',raw:window.n},
+  ].map(row=>({...row,value:row.raw+tolerance,exceeded:window.demand>row.raw+tolerance+1e-9}));
+  const calendarWins=window.n>=window.c1;
+  const basis=window.rank<=1?`${amount(window.c0)}个工作日，每天按1工日`:window.rank===2?
+    `工作日${amount(window.c0)}工日＋模拟加班${amount(overtime)}工日`:
+    calendarWins?`${amount(window.n)}个日历天，每天按1工日`:`工作日＋模拟加班（${amount(window.c1)}工日，大于${amount(window.n)}个日历天）`;
+  const sentence=`本段申报${amount(window.demand)}工日；按${basis}${tolerance?`，再加${amount(tolerance)}工日容差`:''}，参考量为${amount(comparison.threshold)}工日，${comparison.excess>0?`多出${amount(comparison.excess)}工日`:'未超出'}。`;
+  const estimated = window.missing_calendar?.length > 0 || (window.basis && window.basis !== '人员投入期');
+  const workdayExcess = Math.max(0, window.demand - window.c0 - tolerance);
+  const period = window.start && window.end ? `${dateLabel(window.start)}—${dateLabel(window.end)}` : '该核查时段';
+  const workdayExplanation = `${period}，计入${window.entry_ids?.length ?? 0}条完整申报，合计${amount(window.demand)}工日。按当前${estimated?'暂估':''}日历有${amount(window.c0)}个工作日，每天按1工日比较${tolerance?`，另计${amount(tolerance)}工日容差`:''}，${workdayExcess > 1e-9?`超出工作日基准${amount(workdayExcess)}工日`:'未超出工作日基准'}。${window.missing_calendar?.length?`${window.missing_calendar.join('、')}年放假调休安排待补。`:''}`;
+  return {rows,comparison,basis,sentence,tolerance,bands:{green:window.c0+tolerance,yellow:window.c1+tolerance,red:window.c2+tolerance},
+    workdayExplanation,
+    equation:comparison.excess>0?`申报 ${amount(window.demand)} − 参考 ${amount(comparison.threshold)} ＝ 多出 ${amount(comparison.excess)} 工日`:`申报 ${amount(window.demand)} ≤ 参考 ${amount(comparison.threshold)} 工日`,
+    compact:`申报${amount(window.demand)}工日 / 工作日${estimated?'约':''}${amount(window.c0)}天`};
 }
 
 export function windowContributions(window, entries, rules = {}) {
   return [...new Set(window?.entry_ids??[])].flatMap(id=>{
     const entry=entries.find(e=>e.id===id);
     if(!entry)return [];
-    const days=entry.unit==='工日'?entry.amount:entry.unit==='工时'&&rules.hours_per_day>0?entry.amount/rules.hours_per_day:entry.unit==='人月'&&rules.days_per_month>0?entry.amount*rules.days_per_month:null;
+    const days=entry.unit==='工日'?entry.amount:entry.unit==='工时'&&rules.hours_per_day>0?entry.amount/rules.hours_per_day:null;
     return [{...entry,days}];
   });
 }
@@ -27,7 +54,7 @@ export function capacityScale(window, rules = {}) {
   if(window.demand!==null&&(!Number.isFinite(window.demand)||window.demand<0))return null;
   const tolerance=rules.tolerance??0;
   const values=[window.c0,window.c1,window.c2].map(v=>v+tolerance);
-  const names=['常规','加班后','高负荷'];
+  const names=['工作日','含加班上限','最高参考上限'];
   const markers=[];
   values.forEach((value,index)=>{
     const previous=markers.at(-1);
@@ -43,17 +70,25 @@ export function riskExplanation(window, rules = {}) {
   const tolerance=rules.tolerance??0;
   if(!Number.isFinite(threshold)||!Number.isFinite(window.demand))return '';
   const count=new Set(window.project_ids).size;
-  const reference=['按模拟工作日计算，常规可安排','计入参考加班量后，模拟可安排','按当前模拟口径，高负荷参考量为'][window.rank-1];
+  const reference=['按工作日数、每天1工日计算，参考量为','计入参考加班量后，模拟参考量为',`比较日历天数${amount(window.n)}与含加班上限${amount(window.c1)}工日，最高参考上限为`][window.rank-1];
   const excess=window.demand-threshold-tolerance;
   // Use the actual crossed boundary, not window.excess (rank 2's excess is 0).
   if(excess<=0)return '';
-  return `${dateLabel(window.start)}—${dateLabel(window.end)}，${count}个项目合计申报${amount(window.demand)}工日；${reference}${amount(threshold)}工日${tolerance>0?`，再计入${amount(tolerance)}工日容差后`:''}，仍多出${amount(excess)}工日，因此提示“${window.label}”。`;
+  return `${dateLabel(window.start)}—${dateLabel(window.end)}，${count}个项目合计申报${amount(window.demand)}工日；${reference}${amount(threshold)}工日${tolerance>0?`，再计入${amount(tolerance)}工日容差后`:''}，仍多出${amount(excess)}工日，因此提示“${riskLabels[window.rank]}”。`;
 }
 
 export function capacityExplanation(window, rules = {}) {
   if(!window)return '';
   const overtime=window.c1-window.c0;
-  return `这段时间共${window.n}个日历天，模拟日历中的工作日可安排${amount(window.c0)}工日，加上按当前参数折算的${amount(overtime)}工日参考加班量，得到${amount(window.c1)}工日；高负荷参考量取日历天数与加班后参考量中的较大值，为${amount(window.c2)}工日${rules.tolerance>0?`，比较时另加${amount(rules.tolerance)}工日容差`:''}。`;
+  const overtimeBasis=rules.hours_per_day>0&&rules.average_month>0?`（${amount(rules.overtime_hours)}工时/月 ÷ ${amount(rules.hours_per_day)}工时/工日 × ${window.n}天 ÷ ${amount(rules.average_month)}天/月）`:'';
+  return `这段时间共${window.n}个日历天，按当前日历有${amount(window.c0)}个工作日，每天以1工日作筛查参考；再加模拟加班${amount(overtime)}工日${overtimeBasis}，含加班上限为${amount(window.c1)}工日。另按全部${window.n}个日历天、每天1工日得到${window.n}工日；取日历天数与含加班上限中的较大值，最高参考上限为${amount(window.c2)}工日${rules.tolerance>0?`，另加${amount(rules.tolerance)}工日容差`:''}。这些是总量筛查假设，不是实际逐日投入。`;
+}
+
+export function windowReason(window, entries, projects, rules = {}) {
+  if(!window)return '';
+  const rows=windowContributions(window,entries,rules);
+  const sources=rows.map(e=>`${projects.find(p=>p.id===e.project_id)?.name||'项目待补'}（${e.start||'日期待补'}至${e.end||'日期待补'}，${amount(e.amount)}${unitLabel(e.unit)}）`).join('、');
+  return `${sources}。${riskExplanation(window,rules)||`该时段合计${amount(window.demand)}工日，未超过工作日参考量。`}请核对这些完整申报的数量、投入日期和加班依据；仅凭期间交叉无法确定哪条申报重复或应审减多少。`;
 }
 const day = value => Date.parse(`${value}T00:00:00Z`) / 86400000;
 

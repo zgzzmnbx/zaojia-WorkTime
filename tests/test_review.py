@@ -49,7 +49,14 @@ class RulesTests(unittest.TestCase):
     def test_unknown_unit_not_converted(self): self.assertIsNone(convert(80,'天',DEFAULT_CONFIG))
     def test_month_unknown_and_configured(self):
         self.assertIsNone(convert(2,'人月',DEFAULT_CONFIG))
-        self.assertEqual(convert(2,'人月',{**DEFAULT_CONFIG,'days_per_month':20}),40)
+        self.assertIsNone(convert(2,'人月',{**DEFAULT_CONFIG,'days_per_month':20}))
+    def test_legacy_unit_is_preserved_but_not_counted(self):
+        entry=self.s['entries'][0]
+        entry['unit']='人月';self.s['config']['days_per_month']=20
+        result=self.result()
+        self.assertTrue(all(entry['id'] not in w['entry_ids'] for w in result['windows']))
+        self.assertTrue(any('更正单位' in f['message'] for f in result['findings']))
+        self.assertEqual(entry['amount'],18)
     def test_nan_rejected(self):
         self.s['entries'][0]['amount']=float('nan')
         with self.assertRaises(ValueError): validate(self.s)
@@ -157,6 +164,21 @@ class StoreTests(unittest.TestCase):
         rev,s=self.store.read();self.store.save(s,rev,'审核A','修改')
         with self.assertRaises(Conflict):self.store.save(s,rev,'审核B','过期修改')
         self.assertEqual(self.store.read()[0],1)
+    def test_project_periods_must_be_ordered_and_implementation_inside_construction(self):
+        rev, original = self.store.read()
+        for patch, message in (
+            ({'build_end': '2025-12-31'}, '建设结束日期不能早于建设开始日期'),
+            ({'impl_end': '2026-02-28'}, '实施结束日期不能早于实施开始日期'),
+            ({'impl_start': '2025-12-31'}, '实施日期不能早于建设开始日期'),
+            ({'impl_start': '', 'impl_end': '2027-01-01'}, '实施日期不能晚于建设结束日期'),
+        ):
+            state = copy.deepcopy(original)
+            state['projects'][0].update(patch)
+            with self.assertRaisesRegex(ValueError, message):
+                self.store.save(state, rev, '审核A', '修改项目')
+            self.assertEqual(self.store.read(), (rev, original))
+        original['projects'][0].update(impl_start='2026-01-01', impl_end='2026-12-31')
+        self.assertEqual(self.store.save(original, rev, '审核A', '修改项目'), rev + 1)
     def test_restore_backup_and_log(self):
         rev,s=self.store.read();self.store.save(empty_state(),rev,'审核A','恢复',True)
         backups=list((self.path.parent/'backups').glob('*.json'));self.assertEqual(len(backups),1)
@@ -169,6 +191,12 @@ class StoreTests(unittest.TestCase):
     def test_separate_demo_and_real(self):
         real=Store(self.path.parent/'real.sqlite3');self.assertEqual(real.read()[1]['entries'],[])
         self.assertEqual(len(self.store.read()[1]['entries']),34)
+    def test_save_rejects_new_unsupported_unit_without_changing_ledger(self):
+        revision,state=self.store.read();before=copy.deepcopy(state)
+        state['entries'][0]['unit']='人月'
+        with self.assertRaisesRegex(ValueError,'仅支持工日和工时'):
+            self.store.save(state,revision,'测试','更改单位')
+        self.assertEqual(self.store.read(),(revision,before))
 
 class HttpTests(unittest.TestCase):
     def setUp(self):

@@ -7,7 +7,7 @@ export function scheduleRisks(result) {
   const items = windows.map(window => ({
     id: `window:${window.start}/${window.end}`,
     kind: 'window', level: 'warning', rank: window.rank,
-    label: riskLabels[window.rank], category: '累计容量',
+    label: riskLabels[window.rank], category: '申报总量超过时段参考',
     start: window.start, end: window.end,
     entryIds: [...new Set(window.entry_ids)],
     window, comparison: capacityComparison(window, result.rule_snapshot),
@@ -24,7 +24,7 @@ export function scheduleRisks(result) {
     items.push({
       id: `finding:${id}`, kind: 'finding', level: finding.level,
       label: finding.level === 'pending' ? '待补 / 待核' : '需核查',
-      category: finding.category, message: finding.message,
+      category: finding.category, message: finding.detail || finding.message,
       start: entry?.start, end: entry?.end,
       entryIds: finding.entry_id ? [finding.entry_id] : [],
     });

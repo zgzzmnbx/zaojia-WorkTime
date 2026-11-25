@@ -1,0 +1,17 @@
+.capacity-standards{margin:8px 0;font-size:12px;color:var(--ink)}
+.standards-heading{display:flex;justify-content:space-between;gap:6px;color:var(--muted);font-size:11px;margin-bottom:4px}
+.standards-heading strong{font-weight:500}
+.capacity-standards dl{display:block!important;margin:0!important}
+.standard-row{display:flex;justify-content:space-between;gap:8px;padding:7px 0;border-bottom:1px solid var(--line);line-height:1.45}
+.standard-row dt{color:var(--ink)!important}
+.standard-row dd{margin:0;text-align:right;white-space:nowrap;font-weight:600}
+.standard-row small{display:block;font-size:10px;color:var(--muted);font-weight:400}
+.standard-note{font-size:10px!important;line-height:1.5!important;color:var(--muted);margin:6px 0!important}
+.standard-result{font-size:12px!important;font-weight:600;line-height:1.7!important;padding:8px;border-radius:6px;background:var(--risk-bg);color:var(--risk-ink);margin:7px 0!important}
+.standard-result small{display:block;font-size:10px;font-weight:400;color:inherit}
+.standard-result strong{display:block;font-size:14px;white-space:nowrap}
+.standard-result>span{font-weight:500}
+.standard-bands{display:flex;flex-direction:column;gap:2px;margin:7px 0;font-size:11px;line-height:1.5}
+.standard-bands>span{color:var(--risk-ink)}
+.flow-reference-chart{font-size:11px;color:var(--muted);margin-top:7px}
+.flow-reference-chart summary{cursor:pointer;padding:4px 0}

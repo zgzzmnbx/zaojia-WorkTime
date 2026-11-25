@@ -1,0 +1,13 @@
+.btn.delete-record{color:#b42318}
+.btn.delete-record:hover{background:#fff0ee}
+.btn.btn-delete{color:#fff;background:#b42318;border-color:#b42318}
+.btn.btn-delete:hover{background:#952017;border-color:#952017}
+[data-theme=dark] .btn.delete-record{color:#ffaaa4}
+[data-theme=dark] .btn.delete-record:hover{background:#472728}
+.deletion-body .deletion-name{font-weight:650;color:var(--ink);overflow-wrap:anywhere}
+.deleted-records>.field{max-width:280px;margin-block:16px}
+.deleted-record-list{padding:0;margin:16px 0 0;list-style:none}
+.deleted-record-list>li{display:flex;align-items:center;gap:16px;padding:14px 0;border-bottom:1px solid var(--line)}
+.deleted-record-list>li>div{flex:1;min-width:0}
+.deleted-record-list strong{font-size:14px;overflow-wrap:anywhere}
+.deleted-record-list small{display:block;margin-top:5px}

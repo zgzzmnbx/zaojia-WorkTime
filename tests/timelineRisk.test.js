@@ -2,7 +2,7 @@ import {execFileSync} from 'node:child_process';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { scheduleRisks } from '../src/scheduleRisks.js';
-import { entryDensity, entryNumbers, entryRisk, riskSegments, personRisk, riskExplanation, capacityExplanation, capacityScale, windowContributions, overlapPeriods, overlapSlice, exactOverlapWindow, orderedWindows, capacityComparison, overlapCapacity } from '../src/timelineRisk.js';
+import { capacityStandards, entryDensity, entryNumbers, entryRisk, riskSegments, personRisk, riskExplanation, capacityExplanation, capacityScale, windowContributions, overlapPeriods, overlapSlice, exactOverlapWindow, orderedWindows, capacityComparison, overlapCapacity } from '../src/timelineRisk.js';
 
 test('工期风险保留全部独立预警时段，只关联完整计入来源，不复制最紧时段摘要',()=>{
   const a={start:'2026-03-02',end:'2026-04-17',rank:3,entry_ids:['a','b'],c0:30,c1:36,c2:40,demand:50};
@@ -37,7 +37,7 @@ test('平均密度包含首尾日，不采用认定量或误作工作日密度',
 test('密度统一折算工日，缺参数或未知单位不显示伪造纹理',()=>{
   const entry={id:'a',start:'2026-03-02',end:'2026-03-03',unit:'工时',amount:16};
   assert.equal(entryDensity(entry,{hours_per_day:8}).perDay,1);
-  assert.equal(entryDensity({...entry,unit:'人月',amount:1},{days_per_month:20}).perDay,10);
+  assert.equal(entryDensity({...entry,unit:'人月',amount:1},{days_per_month:20}),null);
   for(const rules of [{},{hours_per_day:0},{hours_per_day:-8}])assert.equal(entryDensity(entry,rules),null);
   assert.equal(entryDensity({...entry,unit:'项'}),null);
 });
@@ -81,13 +81,13 @@ test('局部高负荷解释指明时间、去重项目数和超出高负荷线�
   const text=riskExplanation({...local,project_ids:['p1','p2','p1']});
   assert.match(text,/2026年3月16日—2026年3月27日/);
   assert.match(text,/2个项目合计申报18工日/);
-  assert.match(text,/高负荷参考量为12工日，仍多出6工日/);
-  assert.match(text,/因此提示“高负荷核查”/);
+  assert.match(text,/最高参考上限为12工日，仍多出6工日/);
+  assert.match(text,/因此提示“极高风险”/);
 });
 test('重点核查比较加班参考线，不误用后端的零excess',()=>{
   const text=riskExplanation({...local,rank:2,demand:38,c0:30,c1:35.9210526,c2:40,excess:0,label:'重点核查'});
-  assert.match(text,/计入参考加班量后，模拟可安排35.92工日，仍多出2.08工日/);
-  assert.match(text,/因此提示“重点核查”/);
+  assert.match(text,/计入参考加班量后，模拟参考量为35.92工日，仍多出2.08工日/);
+  assert.match(text,/因此提示“高风险”/);
 });
 test('说明遵循容差，不把有效容差说成超量',()=>{
   assert.match(riskExplanation(local,{tolerance:1}),/再计入1工日容差后，仍多出5工日/);
@@ -99,8 +99,8 @@ test('正常与缺失结果不生成警告，微小超量不四舍五入成0',()
   assert.match(riskExplanation({...local,demand:12.004}),/多出0.004工日/);
 });
 test('容量来源说明支持加班参考量高于日历天数的配置',()=>{
-  assert.match(capacityExplanation({...local,c1:15,c2:15}),/工作日可安排10工日，加上按当前参数折算的5工日参考加班量/);
-  assert.match(capacityExplanation({...local,c1:15,c2:15}),/较大值，为15工日/);
+  assert.match(capacityExplanation({...local,c1:15,c2:15}),/有10个工作日.*再加模拟加班5工日/);
+  assert.match(capacityExplanation({...local,c1:15,c2:15}),/最高参考上限为15工日/);
 });
 
 test('参考刻度包含当前申报且保留真实比例，超量不截断',()=>{
@@ -115,7 +115,7 @@ test('相同参考线合并标注，容差反映在比较位置',()=>{
   const scale=capacityScale({...local,c1:12},{tolerance:1});
   assert.deepEqual(scale.values,[11,13,13]);
   assert.equal(scale.markers.length,2);
-  assert.deepEqual(scale.markers[1],{value:13,names:['加班后','高负荷'],raw:12});
+  assert.deepEqual(scale.markers[1],{value:13,names:['含加班上限','最高参考上限'],raw:12});
 });
 test('空值不绘制假刻度，全零仍可展示且合并参考线',()=>{
   assert.equal(capacityScale(null),null);
@@ -129,8 +129,8 @@ test('合计标签只取核查窗口关联记录，工时和人月统一折算',
   const entries=[{id:'a',amount:18,unit:'工日',recognized_amount:12},{id:'b',amount:160,unit:'工时'},{id:'c',amount:1,unit:'人月'},{id:'wide',amount:99,unit:'工日'}];
   const rows=windowContributions({entry_ids:['a','b','c','a']},entries,{hours_per_day:8,days_per_month:20});
   assert.deepEqual(rows.map(r=>r.id),['a','b','c']);
-  assert.deepEqual(rows.map(r=>r.days),[18,20,20]);
-  assert.equal(rows.reduce((sum,r)=>sum+r.days,0),58);
+  assert.deepEqual(rows.map(r=>r.days),[18,20,null]);
+  assert.equal(rows.filter(r=>r.days!=null).reduce((sum,r)=>sum+r.days,0),38);
 });
 test('缺失折算不得伪造工日，空窗口没有合计来源',()=>{
   assert.equal(windowContributions({entry_ids:['a']},[{id:'a',amount:1,unit:'人月'}])[0].days,null);
@@ -186,10 +186,10 @@ test('逐步顺序按开始日和结束日排序，不改动风险排序的原�
   assert.deepEqual(orderedWindows([]),[]);
 });
 test('逐步比较正常显示零超出，重点用加班线，高负荷用最后参考线并计容差',()=>{
-  assert.deepEqual(capacityComparison({...local,rank:0,demand:8}),{boundary:'常规参考',threshold:10,excess:0,exceeded:false});
-  assert.deepEqual(capacityComparison({...local,rank:1,demand:11}),{boundary:'常规参考',threshold:10,excess:1,exceeded:true});
-  assert.deepEqual(capacityComparison({...local,rank:2,demand:12,c1:11}),{boundary:'加班参考',threshold:11,excess:1,exceeded:true});
-  assert.deepEqual(capacityComparison(local,{tolerance:1}),{boundary:'高负荷参考',threshold:13,excess:5,exceeded:true});
+  assert.deepEqual(capacityComparison({...local,rank:0,demand:8}),{boundary:'工作日参考',threshold:10,excess:0,exceeded:false});
+  assert.deepEqual(capacityComparison({...local,rank:1,demand:11}),{boundary:'工作日参考',threshold:10,excess:1,exceeded:true});
+  assert.deepEqual(capacityComparison({...local,rank:2,demand:12,c1:11}),{boundary:'含加班上限',threshold:11,excess:1,exceeded:true});
+  assert.deepEqual(capacityComparison(local,{tolerance:1}),{boundary:'最高参考上限',threshold:13,excess:5,exceeded:true});
 });
 
 
@@ -227,4 +227,46 @@ test('来源编号跟随申报ID，切换窗口或同项目多段不重新编号
   const numbers=entryNumbers(entries);
   assert.deepEqual(windowContributions({entry_ids:['b','c']},entries).map(e=>numbers.get(e.id)),[2,3]);
   assert.deepEqual(windowContributions({entry_ids:['a','b']},entries).map(e=>numbers.get(e.id)),[1,2]);
+});
+
+
+test('比较标准直接展示工作日、加班增量与真正的日历天数',()=>{
+ const w={...local,n:47,c0:35,c1:41.96,c2:47,demand:58};
+ const s=capacityStandards(w);
+ assert.deepEqual(s.rows.map(r=>r.value),[35,41.96,47]);
+ assert.deepEqual(s.bands,{green:35,yellow:w.c1,red:47});
+ assert.deepEqual(s.rows.map(r=>r.exceeded),[true,true,true]);
+ assert.match(s.rows[0].label,/35 个工作日/);
+ assert.match(s.rows[1].basis,/35＋6.96 工日/);
+ assert.match(s.sentence,/47个日历天，每天按1工日.*参考量为47工日，多出11工日/);
+});
+test('人员卡片以实际工作日天数为基准，各预警等级不切换成加班或日历天',()=>{
+ const w={...local,n:40,c0:30,c1:35.9210526,c2:40,demand:48};
+ for(const rank of [0,1,2,3]){
+   const s=capacityStandards({...w,rank},{tolerance:.5});
+   assert.equal(s.compact,'申报48工日 / 工作日30天');
+   assert.match(s.workdayExplanation,/30个工作日.*另计0.5工日容差.*超出工作日基准17.5工日/);
+ }
+ const estimated=capacityStandards({...w,missing_calendar:[2026]});
+ assert.equal(estimated.compact,'申报48工日 / 工作日约30天');
+ assert.match(estimated.workdayExplanation,/2026年放假调休安排待补/);
+ assert.match(capacityStandards({...w,basis:'实施期估算'}).compact,/工作日约30天/);
+ assert.match(capacityStandards({...w,demand:29,rank:0}).workdayExplanation,/未超出工作日基准/);
+});
+test('加班参考高于日历天时不把较大值伪装成日历天数',()=>{
+ const w={...local,n:5,c0:5,c1:7,c2:7,demand:8};
+ const s=capacityStandards(w,{tolerance:.5});
+ assert.deepEqual(s.rows.map(r=>r.value),[5.5,7.5,5.5]);
+ assert.deepEqual(s.bands,{green:5.5,yellow:7.5,red:7.5});
+ assert.match(s.rows[2].label,/5 个日历天/);
+ assert.match(s.sentence,/7工日，大于5个日历天.*参考量为7.5工日，多出0.5工日/);
+});
+test('未超参考不写成负超出，微量差额和暂估参数按原精度判断',()=>{
+ const s=capacityStandards({...local,rank:0,demand:8});
+ assert.equal(s.comparison.excess,0);
+ assert.match(s.equation,/申报 8 ≤ 参考 10 工日/);
+ assert.equal(capacityStandards({...local,rank:0,demand:10+5e-10}).comparison.excess,0);
+ assert.equal(capacityStandards(null),null);
+ assert.equal(capacityStandards({...local,c0:null}),null);
+ assert.match(capacityStandards({...local,demand:12.004}).sentence,/多出0.004工日/);
 });

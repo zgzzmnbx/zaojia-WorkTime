@@ -37,16 +37,16 @@
 .person-workspace .table td,.person-workspace .table th{font-size:var(--dws-font-size-control)}
 @media(max-width:1250px){.app-header{gap:6px}.app-header .search{width:180px}.people-panel{width:210px}.evidence{width:280px}.hours-timeline{margin:0 16px 12px}}
 
-/* Semantic accents stay quiet; the application theme and actions remain Astra blue. */
-.rank-0{--risk-ink:#4d7567;--risk-bg:#eef5f1;--risk-line:#b8ccc2}
-.rank-1{--risk-ink:#756b52;--risk-bg:#f6f4ed;--risk-line:#d6ceb8}
-.rank-2{--risk-ink:#8a6a24;--risk-bg:#faf2de;--risk-line:#dcc795}
-.rank-3{--risk-ink:#9a5b13;--risk-bg:#fff4de;--risk-line:#e4c489}
+/* Risk levels keep their meaning across palettes: green, yellow, red, purple. */
+.rank-0{--risk-ink:#23764d;--risk-bg:#edf8f0;--risk-line:#b8ccc2}
+.rank-1{--risk-ink:#8a650d;--risk-bg:#fff9df;--risk-line:#d6ceb8}
+.rank-2{--risk-ink:#b42318;--risk-bg:#fff0ee;--risk-line:#e7b9b4}
+.rank-3{--risk-ink:#7b2cbf;--risk-bg:#f5edff;--risk-line:#cab4e5}
 .rank-pending,.rank-none,.rank-review{--risk-ink:var(--muted);--risk-bg:var(--soft);--risk-line:var(--line)}
-[data-theme=dark] .rank-0{--risk-ink:#a3c5b7;--risk-bg:#25352f;--risk-line:#607e70}
-[data-theme=dark] .rank-1{--risk-ink:#cbc4ae;--risk-bg:#32322c;--risk-line:#77745e}
-[data-theme=dark] .rank-2{--risk-ink:#d8be7a;--risk-bg:#383226;--risk-line:#8c7747}
-[data-theme=dark] .rank-3{--risk-ink:#f0c078;--risk-bg:#3c3020;--risk-line:#a07a42}
+[data-theme=dark] .rank-0{--risk-ink:#a3d7b7;--risk-bg:#25352f;--risk-line:#607e70}
+[data-theme=dark] .rank-1{--risk-ink:#eed078;--risk-bg:#383226;--risk-line:#8c7747}
+[data-theme=dark] .rank-2{--risk-ink:#ffaaa4;--risk-bg:#472728;--risk-line:#9d635e}
+[data-theme=dark] .rank-3{--risk-ink:#d8b4fe;--risk-bg:#352642;--risk-line:#8c6aac}
 .gantt-bar.risk-bar{background:var(--risk-bg);color:var(--risk-ink);border-color:var(--risk-line);border-left:3px solid var(--risk-ink);box-shadow:none}
 .gantt-bar.risk-bar:hover{filter:none;box-shadow:0 2px 8px #182b4910}
 .gantt-bar.risk-bar b{display:flex;gap:10px;align-items:center}

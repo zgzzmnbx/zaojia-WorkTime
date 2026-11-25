@@ -10,7 +10,33 @@ if (-not $health) {
     if (-not (Test-Path -LiteralPath (Join-Path $projectRoot 'dist\index.html'))) { throw 'Run npm install and npm run build first.' }
     $logs = Join-Path $projectRoot 'Codex-Temp'
     New-Item -ItemType Directory -Force -Path $logs | Out-Null
-    $pythonExe = (Get-Command python -ErrorAction Stop).Source
+    # Explorer does not inherit the extra PATH supplied to Codex terminals.
+    # WindowsApps cannot reliably be enumerated; use registered package paths.
+    $candidates = @((Join-Path $projectRoot '.venv\Scripts\python.exe'))
+    $systemPython = (Get-Command python.exe -ErrorAction SilentlyContinue).Source
+    if ($systemPython -and $systemPython -notlike '*\Microsoft\WindowsApps\python.exe') { $candidates += $systemPython }
+    $nodeExe = (Get-Command node -ErrorAction SilentlyContinue).Source
+    if ($nodeExe) { $candidates += Join-Path (Split-Path $nodeExe -Parent) '..\..\python\python.exe' }
+    $packages = @(Get-AppxPackage -Name 'OpenAI.CodexPrimaryRuntime*' -ErrorAction SilentlyContinue | Sort-Object Version -Descending)
+    foreach ($package in $packages) {
+        if ($package.InstallLocation) { $candidates += Join-Path $package.InstallLocation 'dependencies\python\python.exe' }
+    }
+    $pythonLauncher = (Get-Command py.exe -ErrorAction SilentlyContinue).Source
+    if ($pythonLauncher) {
+        try {
+            $located = & $pythonLauncher -3 -c 'import sys; print(sys.executable)' 2>$null
+            if ($LASTEXITCODE -eq 0 -and $located) { $candidates += [string]$located }
+        } catch {}
+    }
+    $pythonExe = $null
+    foreach ($candidate in ($candidates | Select-Object -Unique)) {
+        if (-not (Test-Path -LiteralPath $candidate -PathType Leaf)) { continue }
+        try {
+            & $candidate -c 'import sys, sqlite3; sys.exit(0 if sys.version_info >= (3,10) else 1)' 2>$null
+            if ($LASTEXITCODE -eq 0) { $pythonExe = $candidate; break }
+        } catch {}
+    }
+    if (-not $pythonExe) { throw 'No working Python 3.10+ runtime found. Install Python or repair the installed Codex runtime.' }
     $process = Start-Process -FilePath $pythonExe -ArgumentList '-X','utf8','server.py' -WorkingDirectory $projectRoot -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $logs 'server.stdout.log') -RedirectStandardError (Join-Path $logs 'server.stderr.log')
     $process.Id | Set-Content -LiteralPath (Join-Path $logs 'server.pid')
     for ($attempt=0; $attempt -lt 30; $attempt++) {

@@ -1,9 +1,11 @@
 """Deterministic screening only. No legal or automatic settlement conclusions."""
 from datetime import date, timedelta
-import math
+import math, re
+from record_management import validate_deleted_records
 
 VERSION = '0.1.0'
-LABELS = ['常规范围', '需说明额外投入', '重点核查', '高负荷核查']
+LABELS = ['低风险', '中风险', '高风险', '极高风险']
+QUALIFICATION_LEVELS = ('技术专家','项目经理','高级技术人员','一般技术人员')
 DEFAULT_CONFIG = dict(hours_per_day=8, days_per_month=None, overtime_hours=36,
                       average_month=30.4, tolerance=0, mode='simulation', rule_version=VERSION)
 
@@ -24,11 +26,32 @@ def convert(amount, unit, cfg):
         return None
     if unit == '工日': return float(amount)
     if unit == '工时': return amount / cfg['hours_per_day']
-    if unit == '人月' and cfg.get('days_per_month'): return amount * cfg['days_per_month']
+    # Legacy unsupported units remain in history and must be corrected from source.
     return None
 
 def issue(category, level, message, entry_id=None):
     return dict(category=category, level=level, message=message, entry_id=entry_id)
+
+def finding_detail(finding, entry, project):
+    """Explain recorded date boundaries without guessing daily workload."""
+    msg = finding['message']
+    if not entry or not project:
+        return msg
+    name = project['name']
+    start, end = entry.get('start'), entry.get('end')
+    a, b = project.get('impl_start'), project.get('impl_end')
+    if msg == '人员投入发生在项目实施期之外；不能按天数比例自动审减':
+        outside = []
+        if start < a:
+            outside.append(f'{start}至{min(day(end), day(a)-timedelta(days=1)).isoformat()}')
+        if end > b:
+            outside.append(f'{max(day(start), day(b)+timedelta(days=1)).isoformat()}至{end}')
+        return (f'{name}：申报投入为{start}至{end}，项目实施期为{a}至{b}；'
+                f'{"、".join(outside)}在实施期之外。请核对投入日期、项目实施日期及相应依据；没有逐日工时，不能按越界天数推算审减量。')
+    if msg == '实施期超出建设期，请核对依据':
+        return (f'{name}：实施期{a}至{b}超出建设期{project.get("build_start")}至{project.get("build_end")}，'
+                '请对照合同或实施计划核对两组日期。')
+    return f'{name} · {start or "起始日期待补"}至{end or "终止日期待补"}：{msg}'
 
 class Capacity:
     def __init__(self, start, end, cfg, calendars):
@@ -70,6 +93,7 @@ def windows(items, cfg, calendars):
 
 def prepare_entry(entry, project, cfg, amount_key='amount'):
     amount = convert(entry.get(amount_key),entry.get('unit'),cfg)
+    if entry.get('unit') not in ('工日', '工时'): return None, '申报仅支持工日或工时，请核对原始资料后更正单位'
     if amount is None: return None, '数量或单位换算依据不完整'
     a,b = entry.get('start'),entry.get('end')
     if a or b:
@@ -113,9 +137,11 @@ def review_person(person,state):
         if item:
             w=windows([item],cfg,state['calendars'])[0]
             if w['rank']>0: add('实施期','warning',f'本条投入超过期间常规容量：{w["demand"]:.2f} / {w["c0"]:.2f} 工日（模拟）')
-        required=['title','title_source','title_from','title_to']
-        if not all(person.get(k) for k in required): add('职称计费','pending','职称、证明依据或有效期不完整')
-        elif item and (day(person['title_from'])>item['start'] or day(person['title_to'])<item['end']):
+        permanent=person.get('title_permanent') is True
+        proof=person.get('certificate_id') or person.get('title_source')
+        if not person.get('title') or not proof or (not permanent and not (person.get('title_from') and person.get('title_to'))):
+            add('职称计费','pending','职称、证明依据或有效期不完整')
+        elif item and ((person.get('title_from') and day(person['title_from'])>item['start']) or (not permanent and day(person['title_to'])<item['end'])):
             add('职称计费','warning','职称证明有效期未覆盖投入期间')
         needed=['grade','price','price_unit','basis_title','allowed_grade','basis_price','basis_unit','basis_source','basis_from','basis_to']
         complete=all(entry.get(k) is not None and entry.get(k)!='' for k in needed)
@@ -149,10 +175,11 @@ def review_person(person,state):
         if len(spans)>1: findings.append(issue('跨项目','pending',f'{projects[pid]["name"]} 有多段申报，请核实分段依据'))
     ws=windows(items,cfg,state['calendars']); worst=ws[0] if ws else None
     if worst and worst['rank']>0: findings.append(issue('跨项目','warning',f'最紧时段为{worst["label"]}，仅作模拟筛查'))
-    if worst and worst['missing_calendar']:
-        findings.append(issue('跨项目','pending','、'.join(map(str,worst['missing_calendar']))+'年日历未维护，工作日估算可能高估或低估'))
-    if not person.get('company') or not person.get('code'):
-        findings.append(issue('跨项目','pending','人员单位或工号缺失，身份需补充核实'))
+    missing_years = sorted({year for window in ws for year in window['missing_calendar']})
+    if missing_years:
+        findings.append(issue('跨项目','pending','、'.join(map(str,missing_years))+'年日历未维护，工作日估算可能高估或低估'))
+    if not person.get('code'):
+        findings.append(issue('跨项目','pending','人员工号缺失，身份需补充核实'))
     if not entries:
         for category in ('跨项目','实施期','职称计费'):
             findings.append(issue(category,'pending','没有参与本轮筛查的有效申报'))
@@ -186,6 +213,9 @@ def review_person(person,state):
     for category in ('跨项目','实施期','职称计费'):
         subset=[f for f in findings if f['category']==category]
         summaries[category]='需核查' if any(f['level']=='warning' for f in subset) else ('待补依据' if subset else '未见异常')
+    for finding in findings:
+        entry = next((e for e in all_entries if e['id'] == finding.get('entry_id')), None)
+        finding['detail'] = finding_detail(finding, entry, projects.get(entry['project_id']) if entry else None)
     return dict(person=person,entries=all_entries,active_count=len(entries),windows=ws,worst=worst,
                 findings=findings,checks=summaries,entry_checks=per_entry,occupancy=occupancy,
                 duplicate_scenario=windows(scenario,cfg,state['calendars'])[0] if has_duplicate and scenario else None,
@@ -200,6 +230,7 @@ def validate(state):
     if not isinstance(state,dict) or state.get('schema_version')!=1: raise ValueError('不支持的备份结构版本')
     for key in ('projects','people','entries','calendars'):
         if not isinstance(state.get(key),list): raise ValueError(f'{key} 数据格式错误')
+    validate_deleted_records(state)
     cfg=state.get('config',{})
     limits={'hours_per_day':(4,12),'overtime_hours':(0,200),'average_month':(28,31),'tolerance':(0,0.5)}
     for key,(lo,hi) in limits.items():
@@ -214,7 +245,18 @@ def validate(state):
         keys=[tuple(str(x.get(k,'')).strip() for k in fields) for x in rows]
         if len(set(keys))!=len(keys): raise ValueError('项目编号或同单位工号重复')
         if any(not x.get('name','').strip() or not x.get('code','').strip() for x in rows): raise ValueError('名称与编号必填')
-    if any(not p.get('company','').strip() for p in state['people']): raise ValueError('人员所属单位必填')
+    codes={}
+    for p in state['people']:
+        if not isinstance(p.get('company',''),str): raise ValueError('人员所属单位格式错误')
+        code=p['code'].strip(); company=p.get('company','').strip()
+        if code in codes and (not company or '' in codes[code]): raise ValueError('工号已存在，请选择已有人员；不同单位同号时请补充所属单位')
+        codes.setdefault(code,set()).add(company)
+        if 'title_permanent' in p and not isinstance(p['title_permanent'],bool): raise ValueError('资格证有效期格式错误')
+        if p.get('certificate_id') and not re.fullmatch(r'[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}',p['certificate_id']):
+            raise ValueError('资格证编号无效')
+        if p.get('qualification_required'):
+            if p.get('title') not in QUALIFICATION_LEVELS or not p.get('certificate_id'): raise ValueError('新人员须选择四类级别之一并上传资格证图片')
+            if not p.get('title_permanent') and not (p.get('title_from') and p.get('title_to')): raise ValueError('非长期有效的资格证须填写有效起止日期')
     all_objects=state['projects']+state['people']+state['entries']
     for obj in all_objects:
         for start,end in (('build_start','build_end'),('impl_start','impl_end'),('start','end'),('title_from','title_to'),('basis_from','basis_to')):
@@ -223,7 +265,12 @@ def validate(state):
                     d=day(obj[k])
                     if not 2000<=d.year<=2100: raise ValueError('日期须在2000～2100年之间')
             if obj.get(start) and obj.get(end):
-                if day(obj[start])>day(obj[end]): raise ValueError('结束日期不能早于开始日期')
+                if day(obj[start])>day(obj[end]):
+                    message = {
+                        'build_start': '建设结束日期不能早于建设开始日期',
+                        'impl_start': '实施结束日期不能早于实施开始日期',
+                    }.get(start, '结束日期不能早于开始日期')
+                    raise ValueError(message)
                 if (day(obj[end])-day(obj[start])).days>3660: raise ValueError('单条期间超过10年，请核对日期')
         if obj.get('submitted_at'): day(obj['submitted_at'])
     pids={x['id'] for x in state['projects']}; people={x['id'] for x in state['people']}; orders=[]
@@ -246,10 +293,12 @@ def validate(state):
     if len(orders)!=len(set(orders)): raise ValueError('已认定记录处理序号重复')
     years=[]
     for c in state['calendars']:
-        if not isinstance(c.get('year'),int) or not 2000<=c['year']<=2100 or not c.get('source','').strip(): raise ValueError('日历年份或依据缺失')
+        if not isinstance(c,dict) or type(c.get('year')) is not int or not 2000<=c['year']<=2100 or not isinstance(c.get('source'),str) or not c['source'].strip(): raise ValueError('日历年份或依据缺失')
         years.append(c['year'])
         h,m=c.get('holidays'),c.get('makeup_days')
         if not isinstance(h,list) or not isinstance(m,list): raise ValueError('日历格式不正确')
+        if any(not isinstance(x,str) or not re.fullmatch(r'\d{4}-\d{2}-\d{2}', x) for x in h+m): raise ValueError('日历日期须为 YYYY-MM-DD')
+        if len(h)!=len(set(h)) or len(m)!=len(set(m)): raise ValueError('日历中存在重复日期')
         if set(h)&set(m): raise ValueError('同一天不能同时为休息与补班')
         if any(day(x).year!=c['year'] for x in h+m): raise ValueError('日历日期与年份不一致')
     if len(years)!=len(set(years)): raise ValueError('日历年份重复')

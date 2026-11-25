@@ -7,7 +7,7 @@
     "build": "vite build",
     "test": "python -m unittest discover -s tests -v",
     "start": "python server.py",
-    "test:ui-logic": "node --test tests/timelineRisk.test.js tests/recordId.test.js"
+    "test:ui-logic": "node --test tests/timelineRisk.test.js tests/timeAxis.test.js tests/recordId.test.js tests/workCalendar.test.js"
   },
   "dependencies": {
     "@phosphor-icons/react": "2.1.10",
@@ -19,6 +19,6 @@
     "tailwindcss": "4.3.3"
   },
   "devDependencies": {
-    "vite": "8.3.2"
+    "vite": "8.3.8"
   }
 }
