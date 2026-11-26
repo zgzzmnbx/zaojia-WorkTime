@@ -110,17 +110,27 @@ def selection_template(template, state, *, refresh=False):
         if roster == main:
             raise ValueError('人员工时与人员选项必须是不同工作表')
         main_xml = workbook_xml(source, main)
-        grid = not refresh or any(header in (GRID_HEADERS, GRID_REFERENCE_HEADERS, DATED_GRID_HEADERS)
-                                  for header in workbook_headers(source, main_xml))
-        roster_rows = roster_values(state, grid)
+        headers = list(workbook_headers(source, main_xml))
+        dated_grid = not refresh or DATED_GRID_HEADERS in headers
+        grid = dated_grid or any(header in (GRID_HEADERS, GRID_REFERENCE_HEADERS) for header in headers)
+        epoch = wb.find('s:workbookPr', NS)
+        epoch = epoch is not None and epoch.get('date1904') in ('1', 'true')
+        roster_rows = roster_values(state, grid, dated=dated_grid)
         formula_text = f'INDIRECT("\'人员选项\'!$A$2:$A${max(2, len(roster_rows))}")'
         for item in source.infolist():
             content=source.read(item.filename)
             if item.filename == roster:
-                content = update_roster_xml(workbook_xml(source, roster), roster_rows)
+                content = update_roster_xml(workbook_xml(source, roster), roster_rows, epoch=epoch)
             elif item.filename == main:
                 content = update_dropdown_xml(main_xml, formula_text)
                 if not refresh: content = grid_template_sheet(content)
+                elif dated_grid: content = refresh_certificate_formulas(content)
+            elif item.filename == 'xl/workbook.xml':
+                calculation = wb.find('s:calcPr', NS)
+                if calculation is None:
+                    calculation = ET.SubElement(wb, ns+'calcPr')
+                calculation.attrib.update(calcMode='auto', fullCalcOnLoad='1', forceFullCalc='1', calcOnSave='1')
+                content = ET.tostring(wb, encoding='utf-8', xml_declaration=True)
             elif not refresh and item.filename == 'xl/styles.xml':
                 root = ET.fromstring(content)
                 styles = ET.SubElement(root, ns+'dxfs', count='1')
@@ -140,7 +150,7 @@ def selection_template(template, state, *, refresh=False):
                 notes = {
                     'A1': '人员工时录入模板',
                     'A2': '已有人员',
-                    'B2': '在 A 列下拉选人，B～G 自动显示人员资料。只填 H～K：申报数量、申报单位、投入开始、投入结束。',
+                    'B2': '在 A 列下拉选人，B～G 自动显示人员资料，L、M 自动带出证书日期；长期有效时显示“无需填写”。只填 H～K 的本次申报。',
                     'A4': '日期及单位',
                     'B4': '按列标题的示例输入日期。申报单位可选工日、工时。姓名相同请按单位和工号核对。',
                     'A5': '新增人员',
@@ -190,8 +200,7 @@ def grid_template_sheet(content):
                 )
                 ET.SubElement(cell, ns+'v')
             elif index in (12, 13):
-                cell.set('t', 'str')
-                ET.SubElement(cell, ns+'f').text = certificate_date_hint(number)
+                ET.SubElement(cell, ns+'f').text = certificate_date_formula(number, index-4)
                 ET.SubElement(cell, ns+'v')
     validations = root.find('s:dataValidations', NS)
     unit = validations.find('s:dataValidation[@sqref="C2:C2001"]', NS)
@@ -202,7 +211,7 @@ def grid_template_sheet(content):
     ET.SubElement(title, ns+'formula1').text = '"技术专家,项目经理,高级技术人员,一般技术人员"'
     validity = ET.SubElement(validations, ns+'dataValidation', type='list', sqref='F2:F2001',
                              allowBlank='1', showErrorMessage='1', showInputMessage='1',
-                             prompt='长期有效请留空。仅选固定时间段时，填写表尾 L、M 两列证书日期。')
+                             prompt='已有人员自动带出。新增人员长期有效可留空；固定期限请填表尾 L、M 两列。')
     ET.SubElement(validity, ns+'formula1').text = f'"{LONG_VALIDITY},{DATED_VALIDITY}"'
     validations.set('count', str(len(validations)))
     formatting = ET.Element(ns+'conditionalFormatting', sqref='B2:G2001')
@@ -215,6 +224,7 @@ def grid_template_sheet(content):
         ('2', '1', f'AND({fixed_term},L2="")'),
         ('3', '2', fixed_term),
         ('4', '0', f'L2="{DATE_NOT_REQUIRED}"'),
+        ('5', '0', f'AND($A2<>"",$A2<>"{NEW_PERSON}")'),
     ):
         rule = ET.SubElement(dates_format, ns+'cfRule', type='expression', dxfId=style, priority=priority)
         ET.SubElement(rule, ns+'formula').text = formula
@@ -225,20 +235,56 @@ def certificate_date_hint(row):
     return (f'IF(OR($F{row}="{LONG_VALIDITY}",AND($A{row}="{NEW_PERSON}",$F{row}="")),'
             f'"{DATE_NOT_REQUIRED}","")')
 
-def roster_values(state, grid):
+def certificate_date_formula(row, index):
+    choice = f'$A{row}'
+    lookup = f'SUBSTITUTE(SUBSTITUTE(SUBSTITUTE({choice},"~","~~"),"*","~*"),"?","~?")'
+    value = f'VLOOKUP({lookup},\'人员选项\'!$A:$I,{index},FALSE)'
+    return (f'IF(OR({choice}="",{choice}="{NEW_PERSON}"),{certificate_date_hint(row)},'
+            f'IF($F{row}="{LONG_VALIDITY}","{DATE_NOT_REQUIRED}",'
+            f'IFERROR(IF({value}=0,"",{value}),"")))')
+
+
+def refresh_certificate_formulas(content):
+    """Upgrade only known display formulas; preserve manually entered dates."""
+    root = ET.fromstring(content)
+    for cell in root.findall('s:sheetData/s:row/s:c', NS):
+        ref = re.fullmatch(r'([LM])(\d+)', cell.get('r', ''))
+        formula = cell.find('s:f', NS)
+        if not ref or int(ref[2]) < 2 or formula is None:
+            continue
+        index = 8 if ref[1] == 'L' else 9
+        if formula.text not in (certificate_date_hint(ref[2]), certificate_date_formula(ref[2], index)):
+            continue
+        formula.text = certificate_date_formula(ref[2], index)
+        cell.attrib.pop('t', None)
+        value = cell.find('s:v', NS)
+        if value is not None:
+            value.text = None
+    return ET.tostring(root, encoding='utf-8', xml_declaration=True)
+
+
+def roster_values(state, grid, *, dated=False):
     if not grid:
         return [('已有人员（下拉来源，请勿修改）',), *((person_choice(p),) for p in state['people'])]
     rows = [('选择人员', *GRID_HEADERS[1:7]), (NEW_PERSON,)]
+    if dated:
+        rows[0] += ('证书有效开始', '证书有效结束')
     for person in state['people']:
         validity = '长期有效' if person.get('title_permanent') else ' 至 '.join(
             person[key] for key in ('title_from', 'title_to') if person.get(key)
         )
         proof = '已上传，请在网页查看' if person.get('certificate_id') else person.get('title_source') or '—'
+        if dated and validity and not person.get('title_permanent'):
+            validity = DATED_VALIDITY
         rows.append((person_choice(person), person['name'], person['code'], person.get('company') or '待补',
                      person.get('title') or '待补', validity or '待补', proof))
+        if dated:
+            rows[-1] += tuple(date.fromisoformat(person[key])
+                              if person.get(key) and not person.get('title_permanent') else ''
+                              for key in ('title_from', 'title_to'))
     return rows
 
-def update_roster_xml(content, rows):
+def update_roster_xml(content, rows, *, epoch=False):
     # Preserve namespace prefixes and Excel/WPS compatibility attributes.
     doc = minidom.parseString(content)
     sheets = doc.getElementsByTagNameNS(SHEET_NS, 'sheetData')
@@ -259,13 +305,18 @@ def update_roster_xml(content, rows):
         if columns:
             for child in list(columns[0].childNodes):
                 columns[0].removeChild(child)
-            for i, width in enumerate((36, 14, 15, 22, 19, 25, 24), 1):
+            for i, width in enumerate((36, 14, 15, 22, 19, 25, 24, 22, 22)[:len(rows[0])], 1):
                 append(columns[0], 'col', min=str(i), max=str(i), width=str(width), customWidth='1')
     for i, values in enumerate(rows, 1):
         row = append(data, 'row', r=str(i))
         for col, value in enumerate(values):
-            cell = append(row, 'c', r=f'{chr(65+col)}{i}', t='inlineStr')
-            append(append(cell, 'is'), 't').appendChild(doc.createTextNode(value))
+            if isinstance(value, date):
+                cell = append(row, 'c', r=f'{chr(65+col)}{i}', s='10')
+                serial = (value - (date(1904, 1, 1) if epoch else date(1899, 12, 30))).days
+                append(cell, 'v').appendChild(doc.createTextNode(str(serial)))
+            else:
+                cell = append(row, 'c', r=f'{chr(65+col)}{i}', t='inlineStr')
+                append(append(cell, 'is'), 't').appendChild(doc.createTextNode(value))
     dimensions = doc.getElementsByTagNameNS(SHEET_NS, 'dimension')
     if dimensions:
         dimensions[0].setAttribute('ref', f'A1:{chr(64+len(rows[0]))}{len(rows)}')
@@ -433,6 +484,7 @@ def read_xlsx(encoded):
                             continue
                         if dated_grid and col in (12, 13) and (
                             formula.text == certificate_date_hint(rownum) or
+                            formula.text == certificate_date_formula(rownum, col-4) or
                             (formula.get('t') == 'shared' and not formula.text)
                         ):
                             continue
