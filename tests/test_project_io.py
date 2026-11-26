@@ -6,7 +6,7 @@ from zipfile import ZipFile, ZIP_DEFLATED
 from xml.etree import ElementTree as ET
 from engine import empty_state, analyze
 from sample_data import demo_state
-from project_io import FIELDS, COMPACT_FIELDS, GRID_FIELDS, DATED_GRID_FIELDS, DATED_GRID_HEADERS, NS, import_preview, repair_import_row, scoped_report, export_options, selection_template, refresh_template, person_choice, read_xlsx
+from project_io import FIELDS, COMPACT_FIELDS, GRID_FIELDS, DATED_GRID_FIELDS, DATED_GRID_HEADERS, NS, import_preview, repair_import_row, scoped_report, export_options, selection_template, refresh_template, person_choice, read_xlsx, certificate_date_hint, certificate_date_formula
 from server import Store, Conflict, handler_factory
 
 TEMPLATE=Path(__file__).resolve().parents[1]/'public/project-hours-template.xlsx'
@@ -123,6 +123,73 @@ class ImportTests(unittest.TestCase):
         self.assertEqual((data['code'], data['title_from'], data['title_to']), ('001', '2025-04-04', '2026-04-04'))
         row['person_choice'] = ''
         self.assertTrue(import_preview(empty_state(), filled([row], fields=GRID_FIELDS))['errors'])
+
+    def test_certificate_template_has_typed_dates_and_automatic_recalculation(self):
+        state=demo_state()
+        state['people'][1].update(title_permanent=True,title_from='',title_to='')
+        state['people'][2].update(title_from='',title_to='')
+        before=copy.deepcopy(state)
+        with ZipFile(io.BytesIO(selection_template(TEMPLATE.read_bytes(),state))) as z:
+            roster=ET.fromstring(z.read('xl/worksheets/sheet2.xml'))
+            def text(ref):
+                cell=roster.find(f'.//s:c[@r="{ref}"]',NS)
+                return ''.join(cell.itertext())
+            self.assertEqual(text('F3'),'固定时间段内有效')
+            self.assertEqual((text('H3'),text('I3')),('45658','46752'))
+            self.assertEqual(roster.find('.//s:c[@r="H3"]',NS).get('t'),None)
+            self.assertEqual((text('F4'),text('H4'),text('I4')),('长期有效','',''))
+            self.assertEqual((text('F5'),text('H5'),text('I5')),('待补','',''))
+            self.assertEqual(text('I1'),'证书有效结束')
+            main=ET.fromstring(z.read('xl/worksheets/sheet1.xml'))
+            self.assertEqual(main.find('.//s:c[@r="L2"]/s:f',NS).text,certificate_date_formula(2,8))
+            self.assertEqual(main.find('.//s:c[@r="M2001"]/s:f',NS).text,certificate_date_formula(2001,9))
+            self.assertEqual(ET.fromstring(z.read('xl/workbook.xml')).find('s:calcPr',NS).get('calcMode'),'auto')
+        self.assertEqual(state,before)
+
+    def test_refresh_upgrades_old_date_hints_and_preserves_manual_dates(self):
+        state=demo_state();raw=selection_template(TEMPLATE.read_bytes(),state);out=io.BytesIO()
+        with ZipFile(io.BytesIO(raw)) as source,ZipFile(out,'w',ZIP_DEFLATED) as target:
+            for item in source.infolist():
+                content=source.read(item)
+                if item.filename=='xl/worksheets/sheet1.xml':
+                    sheet=ET.fromstring(content)
+                    for ref in ('L2','M2'):
+                        cell=sheet.find(f'.//s:c[@r="{ref}"]',NS)
+                        cell.find('s:f',NS).text=certificate_date_hint(2)
+                        cell.find('s:v',NS).text='无需填写'
+                    shared=sheet.find('.//s:c[@r="L2"]/s:f',NS)
+                    shared.attrib.update(t='shared',si='0',ref='L2:L2001')
+                    for ref,value in [('L3','2025/4/4'),('M3','2026/4/4')]:
+                        cell=sheet.find(f'.//s:c[@r="{ref}"]',NS)
+                        cell.remove(cell.find('s:f',NS));cell.set('t','str')
+                        cell.find('s:v',NS).text=value
+                    content=ET.tostring(sheet)
+                target.writestr(item,content)
+        refreshed=refresh_template(base64.b64encode(out.getvalue()).decode(),state)
+        with ZipFile(io.BytesIO(refreshed)) as z:
+            sheet=ET.fromstring(z.read('xl/worksheets/sheet1.xml'))
+            for ref,index in [('L2',8),('M2',9)]:
+                cell=sheet.find(f'.//s:c[@r="{ref}"]',NS)
+                self.assertEqual(cell.find('s:f',NS).text,certificate_date_formula(2,index))
+                self.assertFalse(cell.findtext('s:v',namespaces=NS))
+            self.assertEqual(sheet.find('.//s:c[@r="L2"]/s:f',NS).get('ref'),'L2:L2001')
+            self.assertEqual(sheet.find('.//s:c[@r="L3"]/s:v',NS).text,'2025/4/4')
+            self.assertEqual(sheet.find('.//s:c[@r="M3"]/s:v',NS).text,'2026/4/4')
+
+    def test_unknown_certificate_date_formula_is_not_trusted(self):
+        row={**BASE,'person_choice':person_choice(demo_state()['people'][0]),'name':'','company':'','code':''}
+        encoded=filled([row],fields=DATED_GRID_FIELDS);out=io.BytesIO()
+        with ZipFile(io.BytesIO(base64.b64decode(encoded))) as source,ZipFile(out,'w',ZIP_DEFLATED) as target:
+            for item in source.infolist():
+                content=source.read(item)
+                if item.filename=='xl/worksheets/sheet1.xml':
+                    sheet=ET.fromstring(content)
+                    cell=sheet.find('.//s:c[@r="L2"]',NS)
+                    ET.SubElement(cell,'{'+NS['s']+'}f').text='TODAY()'
+                    content=ET.tostring(sheet)
+                target.writestr(item,content)
+        result=import_preview(demo_state(),base64.b64encode(out.getvalue()).decode())
+        self.assertTrue(result['errors'])
 
     def test_new_excel_validity_and_units(self):
         row = {**BASE, 'person_choice':'新增人员', 'title':'技术专家', 'validity':'固定时间段内有效',
@@ -245,9 +312,16 @@ class WorkflowHttpTests(unittest.TestCase):
                 with urllib.request.urlopen(base+'/api/demo/export-options?person=u1') as response: self.assertEqual(len(json.load(response)['projects']),3)
                 with urllib.request.urlopen(base+'/api/demo/template') as response:
                     with ZipFile(io.BytesIO(response.read())) as z:
+                        demo_main=ET.fromstring(z.read('xl/worksheets/sheet1.xml'))
                         self.assertIn(person_choice(before[True][1]['people'][0]),''.join(ET.fromstring(z.read('xl/worksheets/sheet2.xml')).itertext()))
                 with urllib.request.urlopen(base+'/api/template') as response:
                     with ZipFile(io.BytesIO(response.read())) as z:
+                        actual_main=ET.fromstring(z.read('xl/worksheets/sheet1.xml'))
+                        for ref in ('F2','L2','M2'):
+                            self.assertEqual(actual_main.find(f'.//s:c[@r="{ref}"]/s:f',NS).text,
+                                             demo_main.find(f'.//s:c[@r="{ref}"]/s:f',NS).text)
+                        self.assertEqual(ET.tostring(actual_main.find('s:sheetData/s:row',NS)),
+                                         ET.tostring(demo_main.find('s:sheetData/s:row',NS)))
                         self.assertNotIn(before[True][1]['people'][0]['name'],z.read('xl/worksheets/sheet2.xml').decode())
                 request_data=dict(file=filled([dict(person_choice=person_choice(before[True][1]['people'][0]),amount=2)],fields=COMPACT_FIELDS),defaults=dict(start='2026/3/2',end='2026/3/6',unit='工日'))
                 req=urllib.request.Request(base+'/api/demo/template-refresh',data=json.dumps({'file':request_data['file']}).encode(),headers={'Content-Type':'application/json'})
